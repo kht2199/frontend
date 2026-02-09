@@ -7,11 +7,11 @@ Vite 7 + React 18 + TypeScript 기반 프론트엔드 프로젝트.
 | 분류 | 라이브러리 |
 |------|-----------|
 | 빌드 | Vite 7, TypeScript 5.9 |
-| UI | React 18, Ant Design 6 |
+| UI | React 18, Ant Design 5 |
 | 라우팅 | React Router 7 |
 | 상태 관리 | Zustand |
 | 서버 상태 | TanStack Query |
-| 차트 | ECharts 6 (커스텀 래퍼), amCharts 5 |
+| 차트 | ECharts 5 (커스텀 래퍼), amCharts 5 |
 | 유효성 검사 | Zod |
 | 코드 생성 | Kubb (OpenAPI → TS 타입, Zod 스키마, React Query 훅) |
 | 린트/포맷 | Biome |
