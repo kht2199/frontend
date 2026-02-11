@@ -10,7 +10,7 @@ export default defineConfig({
 		path: "./openapi.json",
 	},
 	output: {
-		path: "./src/gen",
+		path: "./src",
 		clean: true,
 	},
 	plugins: [
