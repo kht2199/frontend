@@ -17,8 +17,15 @@ const navItems: MenuProps["items"] = [
 	},
 	{ key: "/settings/alert", label: "알람" },
 	{ key: "/history/alert", label: "이력 관리" },
-	{ key: "/llm", label: "LLM" },
 	{ key: "/manage/contact", label: "관리자" },
+	{
+		key: "sample",
+		label: "샘플",
+		children: [
+			{ key: "/sample/echarts", label: "ECharts" },
+			{ key: "/sample/amcharts", label: "AmCharts" },
+		],
+	},
 ];
 
 export default function DefaultLayout() {
