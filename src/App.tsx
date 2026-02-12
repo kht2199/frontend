@@ -8,6 +8,7 @@ import ContactManagementPage from "./pages/ContactManagementPage";
 import EChartsSamplePage from "./pages/EChartsSamplePage";
 import FabCustomMonitoringPage from "./pages/FabCustomMonitoringPage";
 import FabMonitoringPage from "./pages/FabMonitoringPage";
+import LlmPage from "./pages/LlmPage";
 import MainPage from "./pages/MainPage";
 import ServerMonitoringPage from "./pages/ServerMonitoringPage";
 
@@ -25,6 +26,7 @@ export default function App() {
 						<Route path="server" element={<ServerMonitoringPage />} />
 					</Route>
 					<Route path="history/alert" element={<AlertHistoryPage />} />
+					<Route path="llm" element={<LlmPage />} />
 					<Route path="manage/contact" element={<ContactManagementPage />} />
 					<Route path="settings/alert" element={<AlertSettingPage />} />
 					<Route path="sample/echarts" element={<EChartsSamplePage />} />
