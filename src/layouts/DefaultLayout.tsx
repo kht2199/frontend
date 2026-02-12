@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Form, Layout, Menu, Select } from "antd";
 import type { MenuProps } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router";
@@ -10,6 +11,7 @@ const navItems: MenuProps["items"] = [
 		label: "모니터링",
 		children: [
 			{ key: "/monitor/fab", label: "Fab Monitoring" },
+			{ key: "/monitor/fab-layout", label: "Fab Layout Monitoring" },
 			{ key: "/monitor/bridge", label: "Bridge Monitoring" },
 			{ key: "/monitor/fab-custom", label: "Fab Custom Monitoring" },
 			{ key: "/monitor/server", label: "Server Monitoring" },
@@ -32,9 +34,15 @@ const navItems: MenuProps["items"] = [
 export default function DefaultLayout() {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const [site, setSite] = useState("이천");
 
 	const onClick: MenuProps["onClick"] = ({ key }) => {
 		navigate(key);
+	};
+
+	const handleSiteChange = (value: string) => {
+		setSite(value);
+		navigate("/monitor/fab");
 	};
 
 	return (
@@ -52,11 +60,9 @@ export default function DefaultLayout() {
 			<Content style={{ padding: 24 }}>
 				<Form layout="vertical" style={{ width: "100%", marginBottom: 24 }}>
 					<Form.Item label="관제 Site" style={{ marginBottom: 0 }}>
-						<Select defaultValue="이천" style={{ width: "100%" }}>
+						<Select value={site} onChange={handleSiteChange} style={{ width: "100%" }}>
 							<Select.Option value="이천">이천</Select.Option>
-							<Select.Option value="청주" disabled>
-								청주
-							</Select.Option>
+							<Select.Option value="청주">청주</Select.Option>
 						</Select>
 					</Form.Item>
 				</Form>

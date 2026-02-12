@@ -7,6 +7,7 @@ import BridgeMonitoringPage from "./pages/BridgeMonitoringPage";
 import ContactManagementPage from "./pages/ContactManagementPage";
 import EChartsSamplePage from "./pages/EChartsSamplePage";
 import FabCustomMonitoringPage from "./pages/FabCustomMonitoringPage";
+import FabLayoutMonitoringPage from "./pages/FabLayoutMonitoringPage";
 import FabMonitoringPage from "./pages/FabMonitoringPage";
 import LlmPage from "./pages/LlmPage";
 import MainPage from "./pages/MainPage";
@@ -21,6 +22,7 @@ export default function App() {
 					<Route path="monitor">
 						<Route index element={<Navigate to="fab" replace />} />
 						<Route path="fab" element={<FabMonitoringPage />} />
+						<Route path="fab-layout" element={<FabLayoutMonitoringPage />} />
 						<Route path="bridge" element={<BridgeMonitoringPage />} />
 						<Route path="fab-custom" element={<FabCustomMonitoringPage />} />
 						<Route path="server" element={<ServerMonitoringPage />} />
