@@ -1,0 +1,492 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Backend API",
+		"description": "Spring Boot CRUD + SSE/Polling 샘플 API",
+		"version": "v1.0.0"
+	},
+	"servers": [
+		{
+			"url": "http://localhost:8080",
+			"description": "Generated server url"
+		}
+	],
+	"tags": [
+		{
+			"name": "Member",
+			"description": "회원 CRUD API (JPA)"
+		},
+		{
+			"name": "Notification",
+			"description": "알림 API (SSE + Polling)"
+		},
+		{
+			"name": "Post",
+			"description": "게시글 CRUD API (MyBatis)"
+		}
+	],
+	"paths": {
+		"/api/posts/{id}": {
+			"get": {
+				"tags": ["Post"],
+				"summary": "게시글 단건 조회",
+				"operationId": "findById",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer",
+							"format": "int64"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"*/*": {
+								"schema": {
+									"$ref": "#/components/schemas/PostResponseDto"
+								}
+							}
+						}
+					}
+				}
+			},
+			"put": {
+				"tags": ["Post"],
+				"summary": "게시글 수정",
+				"operationId": "update",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer",
+							"format": "int64"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/PostRequestDto"
+							}
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"*/*": {
+								"schema": {
+									"$ref": "#/components/schemas/PostResponseDto"
+								}
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"tags": ["Post"],
+				"summary": "게시글 삭제",
+				"operationId": "delete",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer",
+							"format": "int64"
+						}
+					}
+				],
+				"responses": {
+					"204": {
+						"description": "No Content"
+					}
+				}
+			}
+		},
+		"/api/members/{id}": {
+			"get": {
+				"tags": ["Member"],
+				"summary": "회원 단건 조회",
+				"operationId": "findById_1",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer",
+							"format": "int64"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"*/*": {
+								"schema": {
+									"$ref": "#/components/schemas/MemberResponseDto"
+								}
+							}
+						}
+					}
+				}
+			},
+			"put": {
+				"tags": ["Member"],
+				"summary": "회원 수정",
+				"operationId": "update_1",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer",
+							"format": "int64"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/MemberRequestDto"
+							}
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"*/*": {
+								"schema": {
+									"$ref": "#/components/schemas/MemberResponseDto"
+								}
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"tags": ["Member"],
+				"summary": "회원 삭제",
+				"operationId": "delete_1",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer",
+							"format": "int64"
+						}
+					}
+				],
+				"responses": {
+					"204": {
+						"description": "No Content"
+					}
+				}
+			}
+		},
+		"/api/posts": {
+			"get": {
+				"tags": ["Post"],
+				"summary": "전체 게시글 조회",
+				"operationId": "findAll",
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"*/*": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"$ref": "#/components/schemas/PostResponseDto"
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"tags": ["Post"],
+				"summary": "게시글 생성",
+				"operationId": "create",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/PostRequestDto"
+							}
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"201": {
+						"description": "Created",
+						"content": {
+							"*/*": {
+								"schema": {
+									"$ref": "#/components/schemas/PostResponseDto"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/notifications/publish": {
+			"post": {
+				"tags": ["Notification"],
+				"summary": "알림 발행",
+				"operationId": "publish",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"additionalProperties": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"*/*": {
+								"schema": {
+									"$ref": "#/components/schemas/NotificationDto"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/members": {
+			"get": {
+				"tags": ["Member"],
+				"summary": "전체 회원 조회",
+				"operationId": "findAll_1",
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"*/*": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"$ref": "#/components/schemas/MemberResponseDto"
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"tags": ["Member"],
+				"summary": "회원 생성",
+				"operationId": "create_1",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/MemberRequestDto"
+							}
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"201": {
+						"description": "Created",
+						"content": {
+							"*/*": {
+								"schema": {
+									"$ref": "#/components/schemas/MemberResponseDto"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/notifications/subscribe": {
+			"get": {
+				"tags": ["Notification"],
+				"summary": "SSE 구독",
+				"operationId": "subscribe",
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"text/event-stream": {
+								"schema": {
+									"$ref": "#/components/schemas/SseEmitter"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/notifications/poll": {
+			"get": {
+				"tags": ["Notification"],
+				"summary": "폴링 조회",
+				"operationId": "poll",
+				"parameters": [
+					{
+						"name": "lastId",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"format": "int64",
+							"default": 0
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"*/*": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"$ref": "#/components/schemas/NotificationDto"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"PostRequestDto": {
+				"type": "object",
+				"properties": {
+					"title": {
+						"type": "string",
+						"minLength": 1
+					},
+					"content": {
+						"type": "string"
+					},
+					"author": {
+						"type": "string"
+					}
+				},
+				"required": ["title"]
+			},
+			"PostResponseDto": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "integer",
+						"format": "int64"
+					},
+					"title": {
+						"type": "string"
+					},
+					"content": {
+						"type": "string"
+					},
+					"author": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"updatedAt": {
+						"type": "string",
+						"format": "date-time"
+					}
+				}
+			},
+			"MemberRequestDto": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string",
+						"minLength": 1
+					},
+					"email": {
+						"type": "string",
+						"format": "email",
+						"minLength": 1
+					}
+				},
+				"required": ["email", "name"]
+			},
+			"MemberResponseDto": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "integer",
+						"format": "int64"
+					},
+					"name": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string"
+					}
+				}
+			},
+			"NotificationDto": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "integer",
+						"format": "int64"
+					},
+					"message": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "date-time"
+					}
+				}
+			},
+			"SseEmitter": {
+				"type": "object",
+				"properties": {
+					"timeout": {
+						"type": "integer",
+						"format": "int64"
+					}
+				}
+			}
+		}
+	}
+}
