@@ -8,7 +8,7 @@ import {
 } from "react";
 import * as THREE from "three";
 import BuildingPanel from "./BuildingPanel";
-import { BUILDING_DATA, BUILDING_NAMES, getSkyParams } from "./buildingData";
+import { BUILDING_DATA, getSkyParams } from "./buildingData";
 import type { BuildingInfo, TimeMode } from "./types";
 import { useBuildingClick } from "./useBuildingClick";
 import { useGLTFModel } from "./useGLTFModel";
@@ -71,6 +71,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 
 	const {
 		buildingGroupsRef,
+		buildingNames,
 		warningsRef,
 		windowsRef,
 		smokesRef,
@@ -445,7 +446,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 					}}
 				>
 					<option value="">건물 선택...</option>
-					{BUILDING_NAMES.map((n) => (
+					{buildingNames.map((n) => (
 						<option key={n} value={n}>
 							{n}
 						</option>
@@ -667,7 +668,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 						minWidth: 120,
 					}}
 				>
-					{BUILDING_NAMES.map((n) => (
+					{buildingNames.map((n) => (
 						<option key={n} value={n}>
 							{n}
 						</option>

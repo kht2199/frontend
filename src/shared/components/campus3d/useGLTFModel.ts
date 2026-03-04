@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { loadCompressedGLB } from "../../lib/loaders";
 import { BLD_NAME_MAP, BUILDING_DATA } from "./buildingData";
@@ -19,6 +19,7 @@ export function useGLTFModel(
 	setLoadProgress: (v: number) => void,
 ) {
 	const buildingGroupsRef = useRef<Record<string, THREE.Object3D>>({});
+	const [buildingNames, setBuildingNames] = useState<string[]>([]);
 	const warningsRef = useRef<THREE.Mesh[]>([]);
 	const windowsRef = useRef<THREE.Mesh[]>([]);
 	const smokesRef = useRef<THREE.Points[]>([]);
@@ -249,6 +250,7 @@ export function useGLTFModel(
 				}
 
 				buildingGroupsRef.current = buildingGroups;
+				setBuildingNames(Object.keys(buildingGroups));
 				warningsRef.current = warnings;
 				windowsRef.current = windows;
 				setLoading(false);
@@ -261,6 +263,7 @@ export function useGLTFModel(
 
 	return {
 		buildingGroupsRef,
+		buildingNames,
 		warningsRef,
 		windowsRef,
 		smokesRef,
