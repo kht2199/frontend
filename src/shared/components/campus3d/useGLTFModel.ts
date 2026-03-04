@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { loadGLTF } from "../../lib/loaders";
+import { loadCompressedGLB } from "../../lib/loaders";
 import { BLD_NAME_MAP, BUILDING_DATA } from "./buildingData";
 
 /* ============================================================================
@@ -31,7 +31,7 @@ export function useGLTFModel(
 		const scene = sceneRef.current;
 		if (!scene) return;
 
-		loadGLTF("/campus.gltf", (progress) => {
+		loadCompressedGLB("/campus.glb", (progress) => {
 			if (progress.total > 0)
 				setLoadProgress(Math.round((progress.loaded / progress.total) * 100));
 		})
