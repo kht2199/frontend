@@ -8,7 +8,6 @@ import { BLD_NAME_MAP, BUILDING_DATA } from "./buildingData";
  *
  * campus.gltf를 비동기로 로드한 후
  *   - 건물 그룹(buildingGroupsRef) 파싱
- *   - 버스 오브젝트(busesRef) 분류
  *   - 창문/경고등 메시 분류
  *   - 경고등 위치에 연기 파티클 생성
  *   - 건물별 라벨 스프라이트 + 수직선 생성
@@ -20,7 +19,6 @@ export function useGLTFModel(
 	setLoadProgress: (v: number) => void,
 ) {
 	const buildingGroupsRef = useRef<Record<string, THREE.Object3D>>({});
-	const busesRef = useRef<THREE.Object3D[]>([]);
 	const warningsRef = useRef<THREE.Mesh[]>([]);
 	const windowsRef = useRef<THREE.Mesh[]>([]);
 	const smokesRef = useRef<THREE.Points[]>([]);
@@ -81,6 +79,7 @@ export function useGLTFModel(
 			.then((gltf) => {
 				const model = gltf.scene;
 				model.scale.set(0.9, 0.9, 0.9);
+				model.traverse((child) => console.log(child.name, child.type));
 
 				// GLTF에 내장된 조명을 제거해 커스텀 조명만 사용
 				const lightsToRemove: THREE.Object3D[] = [];
@@ -94,7 +93,6 @@ export function useGLTFModel(
 				scene.add(model);
 
 				const buildingGroups: Record<string, THREE.Object3D> = {};
-				const buses: THREE.Object3D[] = [];
 				const warnings: THREE.Mesh[] = [];
 				const windows: THREE.Mesh[] = [];
 
@@ -106,8 +104,6 @@ export function useGLTFModel(
 						const displayName = BLD_NAME_MAP[bldKey] ?? bldKey;
 						buildingGroups[displayName] = child;
 					}
-					// 이름이 "Bus_"로 시작하는 오브젝트를 버스로 분류
-					if (child.name?.startsWith("Bus_")) buses.push(child);
 					if ((child as THREE.Mesh).isMesh) {
 						const mesh = child as THREE.Mesh;
 						mesh.castShadow = true;
@@ -253,7 +249,6 @@ export function useGLTFModel(
 				}
 
 				buildingGroupsRef.current = buildingGroups;
-				busesRef.current = buses;
 				warningsRef.current = warnings;
 				windowsRef.current = windows;
 				setLoading(false);
@@ -266,7 +261,6 @@ export function useGLTFModel(
 
 	return {
 		buildingGroupsRef,
-		busesRef,
 		warningsRef,
 		windowsRef,
 		smokesRef,

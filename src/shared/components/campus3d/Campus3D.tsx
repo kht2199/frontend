@@ -71,7 +71,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 
 	const {
 		buildingGroupsRef,
-		busesRef,
 		warningsRef,
 		windowsRef,
 		smokesRef,
@@ -238,29 +237,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 					0.05 + ((Math.sin(elapsed * 0.005) + 1) / 2) * 0.75;
 			});
 
-			// ── 버스 왕복 이동: _prog(0~1)를 _fwd 방향으로 증가시켜 x축 80 범위 왕복 ──
-			busesRef.current.forEach((bus) => {
-				if (!bus.userData._init) {
-					// 최초 1회만 초기화: 시작 진행도·방향·속도·원점 x 저장
-					bus.userData._init = true;
-					bus.userData._prog = Math.random(); // 0~1 무작위 시작 위치
-					bus.userData._fwd = Math.random() > 0.5 ? 1 : -1; // 초기 진행 방향
-					bus.userData._spd = 0.5 + Math.random() * 0.5; // 개별 속도 변화
-					bus.userData._ox = bus.position.x; // GLTF 원점 x 저장
-				}
-				bus.userData._prog += bus.userData._spd * 0.002 * bus.userData._fwd;
-				if (bus.userData._prog >= 1) {
-					bus.userData._prog = 1;
-					bus.userData._fwd = -1; // 끝에 도달하면 방향 반전
-				}
-				if (bus.userData._prog <= 0) {
-					bus.userData._prog = 0;
-					bus.userData._fwd = 1; // 시작점에 도달하면 방향 반전
-				}
-				// _prog 0.5 기준 ±40 범위(총 80)로 x 위치 결정
-				bus.position.x = bus.userData._ox + (bus.userData._prog - 0.5) * 80;
-			});
-
 			// ── 창문 재질 전환: 야간에는 노란 발광, 주간에는 파란 반투명 유리 ──
 			windowsRef.current.forEach((mesh) => {
 				if (!mesh.material) return;
@@ -355,7 +331,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 		lightsRef,
 		sunMeshRef,
 		moonMeshRef,
-		busesRef,
 		warningsRef,
 		windowsRef,
 		smokesRef,
