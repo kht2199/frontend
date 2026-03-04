@@ -6,8 +6,8 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
  * Camera Constants (Campus3D 전역에서 공유)
  * ============================================================================ */
 
-export const CAM_POS = new THREE.Vector3(35, 210, 500);
-export const CAM_TARGET = new THREE.Vector3(35, 0, 170);
+export const CAM_POS = new THREE.Vector3(21, 11, 3);
+export const CAM_TARGET = new THREE.Vector3(12, 6, 3);
 
 // 수직 회전각을 초기 phi ±15° 범위로 제한하기 위한 상수
 const DEG15 = (15 * Math.PI) / 180;
