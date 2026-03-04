@@ -22,6 +22,9 @@ export default function Campus3D() {
 	const camYRef = useRef<HTMLInputElement>(null);
 	const camZRef = useRef<HTMLInputElement>(null);
 	const camDRef = useRef<HTMLInputElement>(null); // 카메라 ~ 타겟 거리 (zoom)
+	const tgtXRef = useRef<HTMLInputElement>(null); // 타겟 X
+	const tgtYRef = useRef<HTMLInputElement>(null); // 타겟 Y
+	const tgtZRef = useRef<HTMLInputElement>(null); // 타겟 Z
 	// 입력창 포커스 중에는 각도 스냅을 끔 (직접 입력한 값을 유지하기 위해)
 	const camInputFocusedRef = useRef(false);
 
@@ -289,6 +292,12 @@ export default function Campus3D() {
 					camDRef.current.value = Math.round(
 						camera.position.distanceTo(controls.target),
 					).toString();
+				if (tgtXRef.current)
+					tgtXRef.current.value = Math.round(controls.target.x).toString();
+				if (tgtYRef.current)
+					tgtYRef.current.value = Math.round(controls.target.y).toString();
+				if (tgtZRef.current)
+					tgtZRef.current.value = Math.round(controls.target.z).toString();
 			}
 
 			renderer.render(scene, camera);
@@ -557,6 +566,75 @@ export default function Campus3D() {
 						}}
 					/>
 				</label>
+
+				{/* 구분선 */}
+				<div
+					style={{
+						width: 1,
+						height: 20,
+						background: "rgba(255,255,255,0.15)",
+						alignSelf: "center",
+					}}
+				/>
+
+				{/* 타겟 XYZ 컨트롤 */}
+				{(["TX", "TY", "TZ"] as const).map((axis, i) => {
+					const axisRef = [tgtXRef, tgtYRef, tgtZRef][i];
+					return (
+						<label
+							key={axis}
+							style={{
+								display: "flex",
+								alignItems: "center",
+								gap: 4,
+								background: "rgba(10,10,20,0.85)",
+								border: "1px solid rgba(255,255,255,0.12)",
+								borderRadius: 8,
+								padding: "0 10px",
+								backdropFilter: "blur(12px)",
+							}}
+						>
+							<span
+								style={{ fontSize: 11, color: "#666", fontFamily: "monospace" }}
+							>
+								{axis}
+							</span>
+							<input
+								ref={axisRef}
+								type="number"
+								step="10"
+								defaultValue="0"
+								onFocus={() => {
+									camInputFocusedRef.current = true;
+								}}
+								onBlur={() => {
+									camInputFocusedRef.current = false;
+								}}
+								onChange={(e) => {
+									if (!cameraRef.current || !controlsRef.current) return;
+									const val = Number(e.target.value);
+									if (!Number.isFinite(val)) return;
+									if (axis === "TX") controlsRef.current.target.x = val;
+									else if (axis === "TY") controlsRef.current.target.y = val;
+									else controlsRef.current.target.z = val;
+									cameraRef.current.lookAt(controlsRef.current.target);
+									controlsRef.current.update();
+								}}
+								style={{
+									width: 60,
+									background: "transparent",
+									color: "#aaa",
+									border: "none",
+									fontSize: 12,
+									fontFamily: "monospace",
+									outline: "none",
+									padding: "8px 0",
+									MozAppearance: "textfield",
+								}}
+							/>
+						</label>
+					);
+				})}
 			</div>
 
 			{/* 상단 우측: 카메라 리셋 버튼 */}

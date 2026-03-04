@@ -78,7 +78,7 @@ export function useScene(mountRef: React.RefObject<HTMLDivElement | null>) {
 		controls.maxPolarAngle = Math.min(Math.PI / 2 - 0.05, INIT_PHI + DEG15);
 		controls.minAzimuthAngle = -Infinity; // 수평 방위각 제한 없음
 		controls.maxAzimuthAngle = Infinity;
-		controls.enablePan = false; // 패닝(이동) 비활성화
+		controls.enablePan = true;
 		controls.update();
 		controlsRef.current = controls;
 
