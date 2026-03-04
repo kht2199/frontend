@@ -34,7 +34,9 @@ export function useBuildingClick(
 			mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
 			mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 			raycaster.setFromCamera(mouse, cameraRef.current);
-			for (const [name, group] of Object.entries(buildingGroupsRef.current)) {
+			for (const [name, group] of Object.entries(
+				buildingGroupsRef.current ?? {},
+			)) {
 				const intersects = raycaster.intersectObjects(group.children, true);
 				if (intersects.length > 0) {
 					const data = BUILDING_DATA[name];
@@ -64,7 +66,7 @@ export function useBuildingClick(
 			mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 			raycaster.setFromCamera(mouse, cameraRef.current);
 			let found = false;
-			for (const [, group] of Object.entries(buildingGroupsRef.current)) {
+			for (const [, group] of Object.entries(buildingGroupsRef.current ?? {})) {
 				if (raycaster.intersectObjects(group.children, true).length > 0) {
 					rendererRef.current.domElement.style.cursor = "pointer"; // 건물 위: 손가락 커서
 					found = true;
