@@ -13,7 +13,11 @@ import { ANGLE_STEP, CAM_POS, CAM_TARGET, useScene } from "./useScene";
  * 씬 초기화(useScene), 모델 로드(useGLTFModel), 클릭 처리(useBuildingClick)를
  * 조합하고, 애니메이션 루프와 UI를 렌더링한다.
  * ============================================================================ */
-export default function Campus3D() {
+interface Campus3DProps {
+	warningBuildings?: string[];
+}
+
+export default function Campus3D({ warningBuildings = [] }: Campus3DProps) {
 	const mountRef = useRef<HTMLDivElement>(null);
 	const animFrameRef = useRef<number | null>(null);
 	const startTimeRef = useRef<number>(Date.now());
@@ -57,8 +61,21 @@ export default function Campus3D() {
 		moonMeshRef,
 	} = useScene(mountRef);
 
-	const { buildingGroupsRef, busesRef, warningsRef, windowsRef, smokesRef } =
-		useGLTFModel(sceneRef, setLoading, setLoadProgress);
+	const {
+		buildingGroupsRef,
+		busesRef,
+		warningsRef,
+		windowsRef,
+		smokesRef,
+		warningMeshesRef,
+		setWarningBuildings,
+	} = useGLTFModel(sceneRef, setLoading, setLoadProgress);
+
+	// 로딩 완료 후 warningBuildings 변경 시 경고 재질 적용
+	useEffect(() => {
+		if (loading) return;
+		setWarningBuildings(warningBuildings);
+	}, [warningBuildings, setWarningBuildings, loading]);
 
 	// ── 건물 선택 핸들러 ──
 	const handleBuildingClick = useCallback((name: string) => {
@@ -208,6 +225,13 @@ export default function Campus3D() {
 					0.15 + Math.sin(elapsed * 0.003) * 0.05;
 			});
 
+			// ── 경고 건물 점멸: sin 파형으로 0.05↔0.8 emissiveIntensity 부드럽게 전환 ──
+			warningMeshesRef.current.forEach((mesh) => {
+				if (!mesh.material || !("emissiveIntensity" in mesh.material)) return;
+				(mesh.material as THREE.MeshStandardMaterial).emissiveIntensity =
+					0.05 + ((Math.sin(elapsed * 0.005) + 1) / 2) * 0.75;
+			});
+
 			// ── 버스 왕복 이동: _prog(0~1)를 _fwd 방향으로 증가시켜 x축 80 범위 왕복 ──
 			busesRef.current.forEach((bus) => {
 				if (!bus.userData._init) {
@@ -329,6 +353,7 @@ export default function Campus3D() {
 		warningsRef,
 		windowsRef,
 		smokesRef,
+		warningMeshesRef,
 	]);
 
 	const timeModes: { value: TimeMode; label: string }[] = [

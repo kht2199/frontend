@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { loadCompressedGLB } from "../../lib/loaders";
 import { BLD_NAME_MAP, BUILDING_DATA } from "./buildingData";
@@ -24,6 +24,49 @@ export function useGLTFModel(
 	const warningsRef = useRef<THREE.Mesh[]>([]);
 	const windowsRef = useRef<THREE.Mesh[]>([]);
 	const smokesRef = useRef<THREE.Points[]>([]);
+	const warningMeshesRef = useRef<THREE.Mesh[]>([]);
+	const warningOrigMapRef = useRef(
+		new Map<THREE.Mesh, { emissive: THREE.Color; emissiveIntensity: number }>(),
+	);
+
+	const setWarningBuildings = useCallback((names: string[]) => {
+		// 기존 경고 건물 재질 복원
+		for (const [mesh, orig] of warningOrigMapRef.current) {
+			const mat = mesh.material as THREE.MeshStandardMaterial;
+			mat.emissive.copy(orig.emissive);
+			mat.emissiveIntensity = orig.emissiveIntensity;
+		}
+		warningMeshesRef.current = [];
+		warningOrigMapRef.current.clear();
+
+		if (names.length === 0) return;
+
+		const newMeshes: THREE.Mesh[] = [];
+		for (const name of names) {
+			const group = buildingGroupsRef.current[name] as
+				| THREE.Object3D
+				| undefined;
+			if (!group) continue;
+			group.traverse((child) => {
+				if (!(child as THREE.Mesh).isMesh) return;
+				const mesh = child as THREE.Mesh;
+				if (!mesh.material || !("emissive" in mesh.material)) return;
+				// 재질을 공유하지 않도록 클론 (미클론 상태일 때만)
+				if (!mesh.userData._matCloned && !mesh.userData._warnMatCloned) {
+					mesh.material = (mesh.material as THREE.Material).clone();
+					mesh.userData._warnMatCloned = true;
+				}
+				const mat = mesh.material as THREE.MeshStandardMaterial;
+				warningOrigMapRef.current.set(mesh, {
+					emissive: mat.emissive.clone(),
+					emissiveIntensity: mat.emissiveIntensity,
+				});
+				mat.emissive.setHex(0xff2200);
+				newMeshes.push(mesh);
+			});
+		}
+		warningMeshesRef.current = newMeshes;
+	}, []);
 
 	// sceneRef는 stable ref — 첫 마운트 시 useScene 이펙트가 먼저 실행되어 이미 설정됨
 	// biome-ignore lint/correctness/useExhaustiveDependencies: sceneRef is a stable ref populated before this effect runs
@@ -221,5 +264,13 @@ export function useGLTFModel(
 			});
 	}, [setLoading, setLoadProgress]);
 
-	return { buildingGroupsRef, busesRef, warningsRef, windowsRef, smokesRef };
+	return {
+		buildingGroupsRef,
+		busesRef,
+		warningsRef,
+		windowsRef,
+		smokesRef,
+		warningMeshesRef,
+		setWarningBuildings,
+	};
 }
