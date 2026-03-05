@@ -99,10 +99,9 @@ export function useGLTFModel(
 				const windows: THREE.Mesh[] = [];
 
 				model.traverse((child) => {
-					// userData.bld_name 이 있는 노드를 건물 그룹으로 등록
-					if (child.userData?.bld_name) {
-						const displayName = child.userData.bld_name as string;
-						buildingGroups[displayName] = child;
+					// 이름이 있는 Group 오브젝트를 건물 그룹으로 등록
+					if (child.name && child.type === "Group") {
+						buildingGroups[child.name] = child;
 					}
 					if ((child as THREE.Mesh).isMesh) {
 						const mesh = child as THREE.Mesh;
