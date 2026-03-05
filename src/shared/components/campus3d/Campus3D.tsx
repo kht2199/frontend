@@ -135,7 +135,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 		groundBox.getCenter(center);
 		const size = new THREE.Vector3();
 		groundBox.getSize(size);
-		const half = (Math.max(size.x, size.z) / 2) * 1.1; // 10% 여백
+		const half = (Math.max(size.x, size.z) / 2) * 0.6; // 줌인 여백
 		const cam = minimapCameraRef.current;
 		cam.left = -half;
 		cam.right = half;
