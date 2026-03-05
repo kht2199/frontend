@@ -898,7 +898,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 			</button>
 
 			{/* 미니맵 컨테이너 */}
-			{/* biome-ignore lint/a11y/useKeyWithClickEvents: minimap is a visual control */}
 			{/* biome-ignore lint/a11y/noStaticElementInteractions: minimap is a visual control */}
 			<div
 				onMouseDown={handleMinimapMouseDown}
