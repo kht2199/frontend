@@ -145,6 +145,32 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 		cam.updateProjectionMatrix();
 	}, [groundBox]);
 
+	// 미니맵 클릭 → 클릭한 XZ 위치로 카메라 타겟 이동
+	const handleMinimapClick = useCallback(
+		(e: React.MouseEvent<HTMLDivElement>) => {
+			const mmCam = minimapCameraRef.current;
+			if (!mmCam || !controlsRef.current || !cameraRef.current) return;
+			const rect = e.currentTarget.getBoundingClientRect();
+			const clickX = e.clientX - rect.left;
+			const clickY = e.clientY - rect.top;
+			// 픽셀 → NDC → 월드 XZ (언프로젝트)
+			const ndc = new THREE.Vector3(
+				(clickX / MM_SIZE) * 2 - 1,
+				-((clickY / MM_SIZE) * 2 - 1),
+				0,
+			);
+			ndc.unproject(mmCam);
+			// 카메라 오프셋(방향·거리)을 유지한 채 타겟만 이동
+			const cam = cameraRef.current;
+			const ctrl = controlsRef.current;
+			const offset = new THREE.Vector3().subVectors(cam.position, ctrl.target);
+			ctrl.target.set(ndc.x, ctrl.target.y, ndc.z);
+			cam.position.copy(ctrl.target).add(offset);
+			ctrl.update();
+		},
+		[cameraRef, controlsRef],
+	);
+
 	const handleFocusBuilding = useCallback(
 		(name: string) => {
 			setFocusBuilding(name);
@@ -852,7 +878,10 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 			</button>
 
 			{/* 미니맵 컨테이너 */}
+			{/* biome-ignore lint/a11y/useKeyWithClickEvents: minimap is a visual control */}
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: minimap is a visual control */}
 			<div
+				onClick={handleMinimapClick}
 				style={{
 					position: "absolute",
 					bottom: MM_MARGIN,
@@ -863,7 +892,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 					border: "1px solid rgba(255,255,255,0.12)",
 					background: "rgba(5,6,16,0.6)",
 					overflow: "hidden",
-					pointerEvents: "none",
+					cursor: "crosshair",
 					zIndex: 50,
 				}}
 			>
