@@ -10,6 +10,7 @@
 			"**",
 			"!!**/dist",
 			"!!.claude",
+			"!!public",
 			"!!src/.kubb",
 			"!!src/models",
 			"!!src/zod",
