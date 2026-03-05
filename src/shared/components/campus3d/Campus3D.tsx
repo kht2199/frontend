@@ -444,7 +444,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 						// 2D 부채꼴 그리기
 						const angle = Math.atan2(fy - py, fx - px);
 						const hFov = (camera.fov * (Math.PI / 180) * camera.aspect) / 2;
-						const fLen = 44;
+						const fLen = 80;
 						ctx.beginPath();
 						ctx.moveTo(px, py);
 						ctx.lineTo(
