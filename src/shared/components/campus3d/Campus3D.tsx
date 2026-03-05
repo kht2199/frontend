@@ -829,14 +829,12 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 					);
 				})}
 
-				{/* 경고 건물 다중 선택 */}
+				{/* 경고 건물 선택 */}
 				<select
-					multiple
-					value={warningSelection}
+					value={warningSelection[0] ?? ""}
 					onChange={(e) => {
-						const selected = Array.from(e.target.selectedOptions).map(
-							(o) => o.value,
-						);
+						const val = e.target.value;
+						const selected = val ? [val] : [];
 						setWarningSelection(selected);
 						setWarningBuildings(selected);
 					}}
@@ -845,15 +843,15 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 						color: "#f87171",
 						border: "1px solid rgba(248,113,113,0.3)",
 						borderRadius: 8,
-						padding: "4px 8px",
+						padding: "8px 14px",
 						fontSize: 12,
 						fontFamily: "'Noto Sans KR', sans-serif",
 						backdropFilter: "blur(12px)",
-						height: 70,
 						outline: "none",
 						minWidth: 120,
 					}}
 				>
+					<option value="">경고 건물...</option>
 					{buildingNames.map((n) => (
 						<option key={n} value={n}>
 							{n}
