@@ -42,7 +42,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 			1,
 			2000,
 		);
-		cam.up.set(0, 0, -1);
+		cam.up.set(0, 0, 1);
 		cam.position.set(CAM_TARGET.x, 800, CAM_TARGET.z);
 		cam.lookAt(CAM_TARGET.x, 0, CAM_TARGET.z);
 		minimapCameraRef.current = cam;
@@ -141,7 +141,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 		cam.right = half;
 		cam.top = half;
 		cam.bottom = -half;
-		cam.up.set(0, 0, -1);
+		cam.up.set(0, 0, 1);
 		cam.position.set(center.x, 800, center.z);
 		cam.lookAt(center.x, 0, center.z);
 		cam.updateProjectionMatrix();
