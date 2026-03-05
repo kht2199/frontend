@@ -47,8 +47,10 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 		minimapCameraRef.current = cam;
 	}
 	const minimap2dRef = useRef<HTMLCanvasElement>(null);
-	// 건물 센터 좌표 캐시 (로드 완료 후 1회 계산)
-	const buildingCentersRef = useRef<Record<string, THREE.Vector3>>({});
+	// 건물 박스 캐시: 4개 XZ 코너 + 센터 (로드 완료 후 1회 계산)
+	const buildingBoxesRef = useRef<
+		Record<string, { corners: THREE.Vector3[]; center: THREE.Vector3 }>
+	>({});
 	// 카메라 XYZ 입력 DOM refs — 매 프레임 직접 value를 써서 리렌더 없이 갱신
 	const camXRef = useRef<HTMLInputElement>(null);
 	const camYRef = useRef<HTMLInputElement>(null);
@@ -100,17 +102,29 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 		setWarningBuildings,
 	]);
 
-	// 건물 로드 완료 시 각 건물 센터 좌표를 캐싱
+	// 건물 로드 완료 시 각 건물의 XZ 4개 코너 + 센터를 캐싱
 	// biome-ignore lint/correctness/useExhaustiveDependencies: buildingGroupsRef is a stable ref
 	useEffect(() => {
-		const centers: Record<string, THREE.Vector3> = {};
+		const boxes: Record<
+			string,
+			{ corners: THREE.Vector3[]; center: THREE.Vector3 }
+		> = {};
 		for (const [name, group] of Object.entries(buildingGroupsRef.current)) {
 			const box = new THREE.Box3().setFromObject(group);
 			const center = new THREE.Vector3();
 			box.getCenter(center);
-			centers[name] = center;
+			const y = center.y;
+			boxes[name] = {
+				corners: [
+					new THREE.Vector3(box.min.x, y, box.min.z),
+					new THREE.Vector3(box.max.x, y, box.min.z),
+					new THREE.Vector3(box.max.x, y, box.max.z),
+					new THREE.Vector3(box.min.x, y, box.max.z),
+				],
+				center,
+			};
 		}
-		buildingCentersRef.current = centers;
+		buildingBoxesRef.current = boxes;
 	}, [buildingNames]);
 
 	// Ground bounding box로 미니맵 OrthographicCamera frustum + 위치 동적 설정
@@ -402,21 +416,34 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 						ctx.lineWidth = 1.5;
 						ctx.stroke();
 
-						// ── 건물 마커: 센터 점 + 이름 라벨 ──
-						for (const [name, center] of Object.entries(
-							buildingCentersRef.current,
+						// ── 건물 마커: 2D 폴리곤(탑뷰 풋프린트) + 이름 라벨 ──
+						for (const [name, { corners, center }] of Object.entries(
+							buildingBoxesRef.current,
 						)) {
-							const bProj = center.clone().project(mmCam);
-							const bx = (bProj.x * 0.5 + 0.5) * MM_SIZE;
-							const by = (1 - (bProj.y * 0.5 + 0.5)) * MM_SIZE;
-							if (bx < 0 || bx > MM_SIZE || by < 0 || by > MM_SIZE) continue;
+							const pts = corners.map((c) => {
+								const p = c.clone().project(mmCam);
+								return {
+									x: (p.x * 0.5 + 0.5) * MM_SIZE,
+									y: (1 - (p.y * 0.5 + 0.5)) * MM_SIZE,
+								};
+							});
 							ctx.beginPath();
-							ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
-							ctx.fillStyle = "rgba(120,210,255,0.85)";
+							ctx.moveTo(pts[0].x, pts[0].y);
+							for (let i = 1; i < pts.length; i++)
+								ctx.lineTo(pts[i].x, pts[i].y);
+							ctx.closePath();
+							ctx.fillStyle = "rgba(120,210,255,0.25)";
 							ctx.fill();
+							ctx.strokeStyle = "rgba(120,210,255,0.75)";
+							ctx.lineWidth = 0.8;
+							ctx.stroke();
+							// 이름 라벨 (센터 투영)
+							const cp = center.clone().project(mmCam);
+							const cx = (cp.x * 0.5 + 0.5) * MM_SIZE;
+							const cy = (1 - (cp.y * 0.5 + 0.5)) * MM_SIZE;
 							ctx.fillStyle = "rgba(200,240,255,0.9)";
 							ctx.font = "8px monospace";
-							ctx.fillText(name, bx + 4, by + 3);
+							ctx.fillText(name, cx + 2, cy + 3);
 						}
 
 						// 카메라 위치 점
