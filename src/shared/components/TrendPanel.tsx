@@ -46,7 +46,7 @@ function CanceledQueueChart({ isActive }: { isActive: boolean }) {
 		instanceRef.current = chart;
 		chart.setOption({
 			tooltip: { trigger: "axis" },
-			grid: { top: 16, right: 8, bottom: 32, left: 36 },
+			grid: { top: 24, right: 8, bottom: 32, left: 36 },
 			xAxis: {
 				type: "category",
 				data: data.labels,
@@ -59,6 +59,7 @@ function CanceledQueueChart({ isActive }: { isActive: boolean }) {
 					type: "bar",
 					data: data.values,
 					itemStyle: { color: "#fa8c16" },
+					label: { show: true, position: "top", fontSize: 10 },
 				},
 			],
 		});
@@ -97,23 +98,20 @@ function OhtUsageChart({ isActive }: { isActive: boolean }) {
 		instanceRef.current = chart;
 		chart.setOption({
 			tooltip: { trigger: "axis" },
-			grid: { top: 16, right: 8, bottom: 32, left: 36 },
+			grid: { top: 24, right: 8, bottom: 32, left: 36 },
 			xAxis: {
 				type: "category",
 				data: data.labels,
 				axisLabel: { fontSize: 10 },
 			},
-			yAxis: {
-				type: "value",
-				max: 100,
-				axisLabel: { fontSize: 10, formatter: "{value}%" },
-			},
+			yAxis: { type: "value", axisLabel: { fontSize: 10 } },
 			series: [
 				{
 					name: "OHT Usage",
 					type: "bar",
 					data: data.values,
 					itemStyle: { color: "#1677ff" },
+					label: { show: true, position: "top", fontSize: 10 },
 				},
 			],
 		});
@@ -173,6 +171,12 @@ function QueueSavingChart({ isActive }: { isActive: boolean }) {
 					stack: "saving",
 					data: data.saved,
 					itemStyle: { color: "#52c41a" },
+					label: {
+						show: true,
+						position: "inside",
+						fontSize: 10,
+						color: "#fff",
+					},
 				},
 				{
 					name: "Potential",
@@ -180,18 +184,19 @@ function QueueSavingChart({ isActive }: { isActive: boolean }) {
 					stack: "saving",
 					data: data.potential,
 					itemStyle: { color: "#b7eb8f" },
+					label: { show: true, position: "top", fontSize: 10 },
 				},
 				{
 					name: "Target",
 					type: "line",
 					data: data.target,
-					symbol: "none",
+					symbol: "circle",
+					symbolSize: 5,
 					lineStyle: { color: "#ff4d4f", width: 2, type: "dashed" },
 					itemStyle: { color: "#ff4d4f" },
 					label: {
 						show: true,
-						position: "end",
-						formatter: "{c}",
+						position: "top",
 						fontSize: 10,
 						color: "#ff4d4f",
 					},
@@ -200,13 +205,13 @@ function QueueSavingChart({ isActive }: { isActive: boolean }) {
 					name: "Baseline",
 					type: "line",
 					data: data.baseline,
-					symbol: "none",
+					symbol: "circle",
+					symbolSize: 5,
 					lineStyle: { color: "#1677ff", width: 2, type: "dashed" },
 					itemStyle: { color: "#1677ff" },
 					label: {
 						show: true,
-						position: "end",
-						formatter: "{c}",
+						position: "top",
 						fontSize: 10,
 						color: "#1677ff",
 					},
@@ -226,7 +231,7 @@ function QueueSavingChart({ isActive }: { isActive: boolean }) {
 		if (isActive) instanceRef.current?.resize();
 	}, [isActive]);
 
-	return <div ref={chartRef} style={{ width: "100%", height: 200 }} />;
+	return <div ref={chartRef} style={{ width: "100%", height: 220 }} />;
 }
 
 // ── TrendPanel ────────────────────────────────────────────────────────────────
