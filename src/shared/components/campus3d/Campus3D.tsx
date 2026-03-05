@@ -45,6 +45,7 @@ const MM_MARGIN = 12; // 우측 하단 여백
 const MM_ORTHO_HALF = 500; // 미니맵 OrthographicCamera 절반 시야 (world units)
 
 const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
+	const containerRef = useRef<HTMLDivElement>(null); // position:relative 기준 컨테이너
 	const mountRef = useRef<HTMLDivElement>(null);
 	const animFrameRef = useRef<number | null>(null);
 	const startTimeRef = useRef<number>(Date.now());
@@ -233,8 +234,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 
 	useBuildingClick(rendererRef, cameraRef, buildingGroupsRef, (name, x, y) => {
 		if (name && x !== undefined && y !== undefined) {
-			// clientX/Y는 뷰포트 기준 → 컨테이너(absolute 기준점) 상대 좌표로 변환
-			const rect = mountRef.current?.getBoundingClientRect();
+			const rect = containerRef.current?.getBoundingClientRect();
 			setBuildingPopup({
 				name,
 				x: x - (rect?.left ?? 0),
@@ -431,10 +431,11 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 			renderer.render(scene, camera);
 
 			// ── 상시 건물 라벨 위치 갱신 (3D→2D 투영) ──
-			const cw =
-				mountRef.current?.clientWidth ?? renderer.domElement.clientWidth;
-			const ch =
-				mountRef.current?.clientHeight ?? renderer.domElement.clientHeight;
+			// canvas rect + container rect 차이로 오프셋 보정
+			const canvasRect = renderer.domElement.getBoundingClientRect();
+			const ctnRect = containerRef.current?.getBoundingClientRect();
+			const ox = canvasRect.left - (ctnRect?.left ?? 0);
+			const oy = canvasRect.top - (ctnRect?.top ?? 0);
 			for (const [name, el] of Object.entries(buildingLabelRefs.current)) {
 				if (!el) continue;
 				const box = buildingBoxesRef.current[name];
@@ -447,8 +448,8 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 					el.style.display = "none";
 					continue;
 				}
-				el.style.left = `${(proj.x * 0.5 + 0.5) * cw}px`;
-				el.style.top = `${(1 - (proj.y * 0.5 + 0.5)) * ch - 32}px`;
+				el.style.left = `${(proj.x * 0.5 + 0.5) * canvasRect.width + ox}px`;
+				el.style.top = `${(1 - (proj.y * 0.5 + 0.5)) * canvasRect.height + oy - 32}px`;
 				el.style.display = "block";
 			}
 
@@ -579,7 +580,10 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 	];
 
 	return (
-		<div style={{ width: "100%", height: "100%", position: "relative" }}>
+		<div
+			ref={containerRef}
+			style={{ width: "100%", height: "100%", position: "relative" }}
+		>
 			<div ref={mountRef} style={{ width: "100%", height: "100%" }} />
 
 			{/* 로딩 오버레이 */}
