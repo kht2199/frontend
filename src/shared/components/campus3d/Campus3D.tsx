@@ -5,6 +5,7 @@ import {
 	useCallback,
 	useEffect,
 	useImperativeHandle,
+	useLayoutEffect,
 	useRef,
 } from "react";
 import * as THREE from "three";
@@ -121,8 +122,10 @@ function SceneAnimator({
 		}
 
 		const sky = getSkyParams(hours);
-		(scene.background as THREE.Color).setRGB(sky.r, sky.g, sky.b);
-		(scene.fog as THREE.FogExp2).color.setRGB(sky.r, sky.g, sky.b);
+		if (scene.background instanceof THREE.Color)
+			scene.background.setRGB(sky.r, sky.g, sky.b);
+		if (scene.fog instanceof THREE.FogExp2)
+			scene.fog.color.setRGB(sky.r, sky.g, sky.b);
 
 		const lights = lightsRef.current;
 		if (lights.ambient) lights.ambient.intensity = sky.ambientIntensity;
@@ -290,11 +293,17 @@ function SceneAnimator({
 /* ============================================================================
  * MinimapRenderer — scissor test로 탑뷰 미니맵 렌더 + 2D 오버레이 갱신
  * props 없음 — 모든 데이터를 useCampus3dStore.getState()로 읽음
+ *
+ * ⚠️ priority=1로 등록하면 R3F의 자동 렌더(state.internal.priority > 0)가 비활성화됨.
+ *    따라서 메인 씬 렌더도 이 useFrame 안에서 명시적으로 호출해야 한다.
  * ============================================================================ */
 function MinimapRenderer() {
 	const { gl, scene, camera } = useThree();
 
 	useFrame(() => {
+		// 메인 씬 렌더 (priority > 0 subscriber가 있으면 R3F 자동 렌더가 스킵되므로 명시적 호출)
+		gl.render(scene, camera);
+
 		const {
 			minimapCamera: mmCam,
 			minimap2dEl,
@@ -425,8 +434,9 @@ function CampusScene() {
 	}, [warningBuildings, setWarningBuildings]);
 
 	// 씬 배경/안개 + 미니맵 카메라 초기화
+	// useLayoutEffect: 첫 useFrame 실행 전에 scene.background가 확실히 설정되도록
 	// biome-ignore lint/correctness/useExhaustiveDependencies: scene is stable from useThree
-	useEffect(() => {
+	useLayoutEffect(() => {
 		scene.background = new THREE.Color(0x345384);
 		scene.fog = new THREE.FogExp2(0x345384, 0.0006);
 		const mmCam = new THREE.OrthographicCamera(-500, 500, 500, -500, 1, 2000);
