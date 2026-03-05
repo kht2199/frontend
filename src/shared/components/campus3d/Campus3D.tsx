@@ -445,7 +445,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 						// ── 건물 마커: 2D 폴리곤(탑뷰 풋프린트) + 이름 라벨 ──
 						for (const [name, { corners, center }] of Object.entries(
 							buildingBoxesRef.current,
-						)) {
+						).filter(([n]) => n === "m14" || n === "m16")) {
 							const pts = corners.map((c) => {
 								const p = c.clone().project(mmCam);
 								return {
