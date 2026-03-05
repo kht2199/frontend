@@ -232,9 +232,15 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 	);
 
 	useBuildingClick(rendererRef, cameraRef, buildingGroupsRef, (name, x, y) => {
-		if (name && x !== undefined && y !== undefined)
-			setBuildingPopup({ name, x, y });
-		else setBuildingPopup(null);
+		if (name && x !== undefined && y !== undefined) {
+			// clientX/Y는 뷰포트 기준 → 컨테이너(absolute 기준점) 상대 좌표로 변환
+			const rect = mountRef.current?.getBoundingClientRect();
+			setBuildingPopup({
+				name,
+				x: x - (rect?.left ?? 0),
+				y: y - (rect?.top ?? 0),
+			});
+		} else setBuildingPopup(null);
 	});
 
 	// ── 애니메이션 루프 ──
@@ -425,8 +431,10 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 			renderer.render(scene, camera);
 
 			// ── 상시 건물 라벨 위치 갱신 (3D→2D 투영) ──
-			const cw = renderer.domElement.clientWidth;
-			const ch = renderer.domElement.clientHeight;
+			const cw =
+				mountRef.current?.clientWidth ?? renderer.domElement.clientWidth;
+			const ch =
+				mountRef.current?.clientHeight ?? renderer.domElement.clientHeight;
 			for (const [name, el] of Object.entries(buildingLabelRefs.current)) {
 				if (!el) continue;
 				const box = buildingBoxesRef.current[name];
