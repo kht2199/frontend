@@ -23,10 +23,35 @@ export interface Campus3DRef {
 	setWarningBuildings: (names: string[]) => void;
 }
 
+const MM_SIZE = 180; // 미니맵 CSS px 크기
+const MM_MARGIN = 12; // 우측 하단 여백
+const MM_ORTHO_HALF = 500; // 미니맵 OrthographicCamera 절반 시야 (world units)
+
 const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 	const mountRef = useRef<HTMLDivElement>(null);
 	const animFrameRef = useRef<number | null>(null);
 	const startTimeRef = useRef<number>(Date.now());
+	// 미니맵: OrthographicCamera (탑다운) + 2D canvas (카메라 funnel 오버레이)
+	const minimapCameraRef = useRef<THREE.OrthographicCamera | null>(null);
+	if (!minimapCameraRef.current) {
+		const cam = new THREE.OrthographicCamera(
+			-MM_ORTHO_HALF,
+			MM_ORTHO_HALF,
+			MM_ORTHO_HALF,
+			-MM_ORTHO_HALF,
+			1,
+			2000,
+		);
+		cam.up.set(0, 0, 1);
+		cam.position.set(CAM_TARGET.x, 800, CAM_TARGET.z);
+		cam.lookAt(CAM_TARGET.x, 0, CAM_TARGET.z);
+		minimapCameraRef.current = cam;
+	}
+	const minimap2dRef = useRef<HTMLCanvasElement>(null);
+	// 건물 박스 캐시: 4개 XZ 코너 + 센터 (로드 완료 후 1회 계산)
+	const buildingBoxesRef = useRef<
+		Record<string, { corners: THREE.Vector3[]; center: THREE.Vector3 }>
+	>({});
 	// 카메라 XYZ 입력 DOM refs — 매 프레임 직접 value를 써서 리렌더 없이 갱신
 	const camXRef = useRef<HTMLInputElement>(null);
 	const camYRef = useRef<HTMLInputElement>(null);
@@ -66,6 +91,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 	const {
 		buildingGroupsRef,
 		buildingNames,
+		groundBox,
 		warningsRef,
 		windowsRef,
 		smokesRef,
@@ -76,6 +102,96 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 	useImperativeHandle(ref, () => ({ setWarningBuildings }), [
 		setWarningBuildings,
 	]);
+
+	// 건물 로드 완료 시 각 건물의 XZ 4개 코너 + 센터를 캐싱
+	// biome-ignore lint/correctness/useExhaustiveDependencies: buildingGroupsRef is a stable ref
+	useEffect(() => {
+		const boxes: Record<
+			string,
+			{ corners: THREE.Vector3[]; center: THREE.Vector3 }
+		> = {};
+		for (const [name, group] of Object.entries(buildingGroupsRef.current)) {
+			const box = new THREE.Box3().setFromObject(group);
+			const center = new THREE.Vector3();
+			box.getCenter(center);
+			const y = center.y;
+			boxes[name] = {
+				corners: [
+					new THREE.Vector3(box.min.x, y, box.min.z),
+					new THREE.Vector3(box.max.x, y, box.min.z),
+					new THREE.Vector3(box.max.x, y, box.max.z),
+					new THREE.Vector3(box.min.x, y, box.max.z),
+				],
+				center,
+			};
+		}
+		buildingBoxesRef.current = boxes;
+	}, [buildingNames]);
+
+	// Ground bounding box로 미니맵 OrthographicCamera frustum + 위치 동적 설정
+	useEffect(() => {
+		if (!groundBox || !minimapCameraRef.current) return;
+		const center = new THREE.Vector3();
+		groundBox.getCenter(center);
+		const size = new THREE.Vector3();
+		groundBox.getSize(size);
+		const half = (Math.max(size.x, size.z) / 2) * 0.6; // 줌인 여백
+		const cam = minimapCameraRef.current;
+		cam.left = -half;
+		cam.right = half;
+		cam.top = half;
+		cam.bottom = -half;
+		cam.up.set(0, 0, 1);
+		cam.position.set(center.x, 800, center.z);
+		cam.lookAt(center.x, 0, center.z);
+		cam.updateProjectionMatrix();
+	}, [groundBox]);
+
+	// 미니맵 클릭 → 클릭한 XZ 위치로 카메라 타겟 이동
+	const minimapDraggingRef = useRef(false);
+
+	const moveMinimapCamera = useCallback(
+		(e: React.MouseEvent<HTMLDivElement>) => {
+			const mmCam = minimapCameraRef.current;
+			if (!mmCam || !controlsRef.current || !cameraRef.current) return;
+			const rect = e.currentTarget.getBoundingClientRect();
+			const clickX = e.clientX - rect.left;
+			const clickY = e.clientY - rect.top;
+			const ndc = new THREE.Vector3(
+				(clickX / MM_SIZE) * 2 - 1,
+				-((clickY / MM_SIZE) * 2 - 1),
+				0,
+			);
+			ndc.unproject(mmCam);
+			const cam = cameraRef.current;
+			const ctrl = controlsRef.current;
+			const offset = new THREE.Vector3().subVectors(cam.position, ctrl.target);
+			ctrl.target.set(ndc.x, ctrl.target.y, ndc.z);
+			cam.position.copy(ctrl.target).add(offset);
+			ctrl.update();
+		},
+		[cameraRef, controlsRef],
+	);
+
+	const handleMinimapMouseDown = useCallback(
+		(e: React.MouseEvent<HTMLDivElement>) => {
+			minimapDraggingRef.current = true;
+			moveMinimapCamera(e);
+		},
+		[moveMinimapCamera],
+	);
+
+	const handleMinimapMouseMove = useCallback(
+		(e: React.MouseEvent<HTMLDivElement>) => {
+			if (!minimapDraggingRef.current) return;
+			moveMinimapCamera(e);
+		},
+		[moveMinimapCamera],
+	);
+
+	const handleMinimapMouseUp = useCallback(() => {
+		minimapDraggingRef.current = false;
+	}, []);
 
 	const handleFocusBuilding = useCallback(
 		(name: string) => {
@@ -285,6 +401,100 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 			}
 
 			renderer.render(scene, camera);
+
+			// ── 미니맵 렌더 (scissor test + OrthographicCamera 탑다운) ──
+			const mmCam = minimapCameraRef.current;
+			if (mmCam) {
+				const rw = renderer.domElement.width;
+				const rh = renderer.domElement.height;
+				const dpr = renderer.getPixelRatio();
+				const mmPx = Math.round(MM_SIZE * dpr);
+				const marginPx = Math.round(MM_MARGIN * dpr);
+
+				renderer.autoClear = false;
+				renderer.setViewport(rw - mmPx - marginPx, marginPx, mmPx, mmPx);
+				renderer.setScissor(rw - mmPx - marginPx, marginPx, mmPx, mmPx);
+				renderer.setScissorTest(true);
+				renderer.clearDepth();
+				renderer.render(scene, mmCam);
+				renderer.setScissorTest(false);
+				renderer.setViewport(0, 0, rw, rh);
+				renderer.autoClear = true;
+
+				// ── 2D canvas: 카메라 위치(점) + 시야각(부채꼴) ──
+				const cvs = minimap2dRef.current;
+				if (cvs) {
+					const ctx = cvs.getContext("2d");
+					if (ctx) {
+						ctx.clearRect(0, 0, MM_SIZE, MM_SIZE);
+
+						// 카메라 위치를 미니맵 NDC → pixel 로 변환
+						const camProj = camera.position.clone().project(mmCam);
+						const px = (camProj.x * 0.5 + 0.5) * MM_SIZE;
+						const py = (1 - (camProj.y * 0.5 + 0.5)) * MM_SIZE;
+
+						// 시선 방향 벡터 → 정면 300유닛 앞 지점을 투영
+						const dir = new THREE.Vector3();
+						camera.getWorldDirection(dir);
+						const frontProj = camera.position
+							.clone()
+							.addScaledVector(dir, 300)
+							.project(mmCam);
+						const fx = (frontProj.x * 0.5 + 0.5) * MM_SIZE;
+						const fy = (1 - (frontProj.y * 0.5 + 0.5)) * MM_SIZE;
+
+						// 2D 부채꼴 그리기
+						const angle = Math.atan2(fy - py, fx - px);
+						const hFov = (camera.fov * (Math.PI / 180) * camera.aspect) / 2;
+						const fLen = 80;
+						ctx.beginPath();
+						ctx.moveTo(px, py);
+						ctx.arc(px, py, fLen, angle - hFov, angle + hFov);
+						ctx.closePath();
+						ctx.fillStyle = "rgba(255,220,50,0.2)";
+						ctx.fill();
+						ctx.strokeStyle = "rgba(255,220,50,0.85)";
+						ctx.lineWidth = 1.5;
+						ctx.stroke();
+
+						// ── 건물 마커: 2D 폴리곤(탑뷰 풋프린트) + 이름 라벨 ──
+						for (const [name, { corners, center }] of Object.entries(
+							buildingBoxesRef.current,
+						).filter(([n]) => n === "m14" || n === "m16")) {
+							const pts = corners.map((c) => {
+								const p = c.clone().project(mmCam);
+								return {
+									x: (p.x * 0.5 + 0.5) * MM_SIZE,
+									y: (1 - (p.y * 0.5 + 0.5)) * MM_SIZE,
+								};
+							});
+							ctx.beginPath();
+							ctx.moveTo(pts[0].x, pts[0].y);
+							for (let i = 1; i < pts.length; i++)
+								ctx.lineTo(pts[i].x, pts[i].y);
+							ctx.closePath();
+							ctx.fillStyle = "rgba(120,210,255,0.25)";
+							ctx.fill();
+							ctx.strokeStyle = "rgba(120,210,255,0.75)";
+							ctx.lineWidth = 0.8;
+							ctx.stroke();
+							// 이름 라벨 (센터 투영)
+							const cp = center.clone().project(mmCam);
+							const cx = (cp.x * 0.5 + 0.5) * MM_SIZE;
+							const cy = (1 - (cp.y * 0.5 + 0.5)) * MM_SIZE;
+							ctx.fillStyle = "rgba(200,240,255,0.9)";
+							ctx.font = "8px monospace";
+							ctx.fillText(name, cx + 2, cy + 3);
+						}
+
+						// 카메라 위치 점
+						ctx.beginPath();
+						ctx.arc(px, py, 4, 0, Math.PI * 2);
+						ctx.fillStyle = "#ffdc32";
+						ctx.fill();
+					}
+				}
+			}
 		}
 		animate();
 
@@ -681,6 +891,35 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 			>
 				&#8634; Reset
 			</button>
+
+			{/* 미니맵 컨테이너 */}
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: minimap is a visual control */}
+			<div
+				onMouseDown={handleMinimapMouseDown}
+				onMouseMove={handleMinimapMouseMove}
+				onMouseUp={handleMinimapMouseUp}
+				onMouseLeave={handleMinimapMouseUp}
+				style={{
+					position: "absolute",
+					bottom: MM_MARGIN,
+					right: MM_MARGIN,
+					width: MM_SIZE,
+					height: MM_SIZE,
+					borderRadius: 8,
+					border: "1px solid rgba(255,255,255,0.12)",
+					background: "rgba(5,6,16,0.6)",
+					overflow: "hidden",
+					cursor: "crosshair",
+					zIndex: 50,
+				}}
+			>
+				<canvas
+					ref={minimap2dRef}
+					width={MM_SIZE}
+					height={MM_SIZE}
+					style={{ position: "absolute", top: 0, left: 0 }}
+				/>
+			</div>
 
 			<style>{`
         @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }

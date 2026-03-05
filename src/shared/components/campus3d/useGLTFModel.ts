@@ -19,6 +19,7 @@ export function useGLTFModel(
 ) {
 	const buildingGroupsRef = useRef<Record<string, THREE.Object3D>>({});
 	const [buildingNames, setBuildingNames] = useState<string[]>([]);
+	const [groundBox, setGroundBox] = useState<THREE.Box3 | null>(null);
 	const warningsRef = useRef<THREE.Mesh[]>([]);
 	const windowsRef = useRef<THREE.Mesh[]>([]);
 	const smokesRef = useRef<THREE.Points[]>([]);
@@ -151,6 +152,10 @@ export function useGLTFModel(
 				setBuildingNames(Object.keys(buildingGroups));
 				warningsRef.current = warnings;
 				windowsRef.current = windows;
+
+				// Ground 오브젝트 bounding box → 미니맵 카메라 범위 산출
+				const ground = model.getObjectByName("Ground");
+				if (ground) setGroundBox(new THREE.Box3().setFromObject(ground));
 				setLoading(false);
 			})
 			.catch((error: unknown) => {
@@ -162,6 +167,7 @@ export function useGLTFModel(
 	return {
 		buildingGroupsRef,
 		buildingNames,
+		groundBox,
 		warningsRef,
 		windowsRef,
 		smokesRef,
