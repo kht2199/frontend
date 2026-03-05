@@ -67,7 +67,11 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 	const [warningSelection, setWarningSelection] = useState<string[]>([]);
 	const [timeMode, setTimeMode] = useState<TimeMode>("morning");
 	const timeModeRef = useRef<TimeMode>("morning");
-	const [, setSelectedBuilding] = useState<string | null>(null);
+	const [buildingPopup, setBuildingPopup] = useState<{
+		name: string;
+		x: number;
+		y: number;
+	} | null>(null);
 	const [loading, setLoading] = useState<boolean>(true);
 	const [loadProgress, setLoadProgress] = useState<number>(0);
 	const [focusBuilding, setFocusBuilding] = useState<string>("");
@@ -208,12 +212,11 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 		[controlsRef, buildingGroupsRef],
 	);
 
-	useBuildingClick(
-		rendererRef,
-		cameraRef,
-		buildingGroupsRef,
-		setSelectedBuilding,
-	);
+	useBuildingClick(rendererRef, cameraRef, buildingGroupsRef, (name, x, y) => {
+		if (name && x !== undefined && y !== undefined)
+			setBuildingPopup({ name, x, y });
+		else setBuildingPopup(null);
+	});
 
 	// ── 애니메이션 루프 ──
 	useEffect(() => {
@@ -500,9 +503,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 
 		// ── Escape 키로 선택 해제 ──
 		function onKeyDown(e: KeyboardEvent) {
-			if (e.key === "Escape") {
-				setSelectedBuilding(null);
-			}
+			if (e.key === "Escape") setBuildingPopup(null);
 		}
 		document.addEventListener("keydown", onKeyDown);
 
@@ -889,6 +890,65 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 			>
 				&#8634; Reset
 			</button>
+
+			{/* 건물 클릭 팝업 */}
+			{buildingPopup &&
+				(() => {
+					const INFO: Record<
+						string,
+						{ title: string; desc: string; location: string }
+					> = {
+						m14: {
+							title: "M14 — Manufacturing Unit",
+							desc: "Capacity: 240 lots/day · Status: Running",
+							location: "Zone B, Bay 14",
+						},
+						m16: {
+							title: "M16 — Assembly Line",
+							desc: "Capacity: 180 lots/day · Status: Warning",
+							location: "Zone C, Bay 16",
+						},
+					};
+					const info = INFO[buildingPopup.name];
+					return (
+						<div
+							style={{
+								position: "absolute",
+								left: buildingPopup.x + 14,
+								top: buildingPopup.y - 10,
+								zIndex: 200,
+								background: "rgba(10,12,24,0.92)",
+								border: "1px solid rgba(255,255,255,0.15)",
+								borderRadius: 8,
+								padding: "10px 14px",
+								backdropFilter: "blur(12px)",
+								minWidth: 200,
+								pointerEvents: "none",
+							}}
+						>
+							<div
+								style={{
+									color: "#fff",
+									fontWeight: 700,
+									fontSize: 13,
+									marginBottom: 4,
+								}}
+							>
+								{info?.title ?? buildingPopup.name}
+							</div>
+							{info?.desc && (
+								<div style={{ color: "#ddd", fontSize: 11, marginBottom: 6 }}>
+									{info.desc}
+								</div>
+							)}
+							{info?.location && (
+								<div style={{ color: "#69c0ff", fontSize: 10 }}>
+									📍 {info.location}
+								</div>
+							)}
+						</div>
+					);
+				})()}
 
 			{/* 미니맵 컨테이너 */}
 			{/* biome-ignore lint/a11y/noStaticElementInteractions: minimap is a visual control */}

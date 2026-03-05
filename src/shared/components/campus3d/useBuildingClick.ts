@@ -11,7 +11,7 @@ export function useBuildingClick(
 	rendererRef: React.RefObject<THREE.WebGLRenderer | null>,
 	cameraRef: React.RefObject<THREE.PerspectiveCamera | null>,
 	buildingGroupsRef: React.RefObject<Record<string, THREE.Object3D>>,
-	setSelectedBuilding: (name: string | null) => void,
+	setSelectedBuilding: (name: string | null, x?: number, y?: number) => void,
 ) {
 	// rendererRef/cameraRef/buildingGroupsRef는 stable refs — 마운트 후 변경되지 않음
 	// biome-ignore lint/correctness/useExhaustiveDependencies: all ref arguments are stable refs
@@ -35,7 +35,7 @@ export function useBuildingClick(
 			)) {
 				const intersects = raycaster.intersectObjects(group.children, true);
 				if (intersects.length > 0) {
-					setSelectedBuilding(name);
+					setSelectedBuilding(name, event.clientX, event.clientY);
 					return; // 첫 번째 교차 건물에서 중단 (중복 선택 방지)
 				}
 			}
