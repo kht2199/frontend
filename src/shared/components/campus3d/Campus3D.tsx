@@ -551,6 +551,7 @@ function CampusScene() {
 		(e: { stopPropagation: () => void; object: THREE.Object3D }) => {
 			e.stopPropagation();
 			const name = findBuildingName(e.object, buildingGroupsRef.current);
+			console.log("[raycast] hit:", e.object.name, "→ building:", name);
 			gl.domElement.style.cursor = name ? "pointer" : "default";
 			useCampus3dStore.setState({ hoveredBuilding: name ?? null });
 		},
