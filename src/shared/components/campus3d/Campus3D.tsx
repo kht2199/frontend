@@ -1,4 +1,4 @@
-import { OrbitControls } from "@react-three/drei";
+import { Html, OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
 	forwardRef,
@@ -287,6 +287,54 @@ function SceneAnimator({
 }
 
 /* ============================================================================
+ * BuildingHoverTooltip — drei <Html>로 3D 월드 좌표에 툴팁 앵커
+ * ============================================================================ */
+function BuildingHoverTooltip() {
+	const hoveredBuilding = useCampus3dStore((s) => s.hoveredBuilding);
+	if (!hoveredBuilding) return null;
+	const info = BUILDING_INFO[hoveredBuilding];
+	if (!info) return null;
+
+	return (
+		<Html position={[info.x, info.h, info.z]} style={{ pointerEvents: "none" }}>
+			<div
+				style={{
+					background: "rgba(10,12,24,0.95)",
+					border: "1px solid rgba(255,255,255,0.18)",
+					borderRadius: 8,
+					padding: "10px 14px",
+					backdropFilter: "blur(12px)",
+					minWidth: 200,
+					whiteSpace: "nowrap",
+					transform: "translate(12px, -50%)",
+				}}
+			>
+				<div
+					style={{
+						color: "#fff",
+						fontWeight: 700,
+						fontSize: 13,
+						marginBottom: 4,
+					}}
+				>
+					{info.title}
+				</div>
+				{info.desc && (
+					<div style={{ color: "#ddd", fontSize: 11, marginBottom: 6 }}>
+						{info.desc}
+					</div>
+				)}
+				{info.location && (
+					<div style={{ color: "#69c0ff", fontSize: 10 }}>
+						📍 {info.location}
+					</div>
+				)}
+			</div>
+		</Html>
+	);
+}
+
+/* ============================================================================
  * MinimapRenderer — scissor test로 탑뷰 미니맵 렌더 + 2D 오버레이 갱신
  * props 없음 — 모든 데이터를 useCampus3dStore.getState()로 읽음
  *
@@ -525,35 +573,18 @@ function CampusScene() {
 	);
 
 	const handlePointerMove = useCallback(
-		(e: {
-			stopPropagation: () => void;
-			object: THREE.Object3D;
-			clientX: number;
-			clientY: number;
-		}) => {
+		(e: { stopPropagation: () => void; object: THREE.Object3D }) => {
 			e.stopPropagation();
 			const name = findBuildingName(e.object, buildingGroupsRef.current);
 			gl.domElement.style.cursor = name ? "pointer" : "default";
-			const containerEl = useCampus3dStore.getState().containerEl;
-			const rect = containerEl?.getBoundingClientRect();
-			if (name) {
-				useCampus3dStore.setState({
-					hoverTooltip: {
-						name,
-						x: e.clientX - (rect?.left ?? 0),
-						y: e.clientY - (rect?.top ?? 0),
-					},
-				});
-			} else {
-				useCampus3dStore.setState({ hoverTooltip: null });
-			}
+			useCampus3dStore.setState({ hoveredBuilding: name ?? null });
 		},
 		[gl, buildingGroupsRef],
 	);
 
 	const handlePointerOut = useCallback(() => {
 		gl.domElement.style.cursor = "default";
-		useCampus3dStore.setState({ hoverTooltip: null });
+		useCampus3dStore.setState({ hoveredBuilding: null });
 	}, [gl]);
 
 	return (
@@ -650,6 +681,9 @@ function CampusScene() {
 
 			{/* 미니맵 렌더 */}
 			<MinimapRenderer />
+
+			{/* 호버 툴팁 — 3D 월드 좌표에 앵커 */}
+			<BuildingHoverTooltip />
 		</>
 	);
 }
@@ -666,7 +700,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 	const loadProgress = useCampus3dStore((s) => s.loadProgress);
 	const buildingNames = useCampus3dStore((s) => s.buildingNames);
 	const buildingPopup = useCampus3dStore((s) => s.buildingPopup);
-	const hoverTooltip = useCampus3dStore((s) => s.hoverTooltip);
 	const timeMode = useCampus3dStore((s) => s.timeMode);
 	const focusBuilding = useCampus3dStore((s) => s.focusBuilding);
 	const warningBuildings = useCampus3dStore((s) => s.warningBuildings);
@@ -1222,65 +1255,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 									</div>
 								</div>
 							)}
-						</div>
-					);
-				})()}
-
-			{/* 호버 툴팁 */}
-			{hoverTooltip &&
-				(() => {
-					const info = BUILDING_INFO[hoverTooltip.name];
-					if (!info) return null;
-					return (
-						<div
-							style={{
-								position: "absolute",
-								left: hoverTooltip.x + 16,
-								top: hoverTooltip.y - 10,
-								zIndex: 300,
-								background: "rgba(10,12,24,0.95)",
-								border: "1px solid rgba(255,255,255,0.18)",
-								borderRadius: 8,
-								padding: "10px 14px",
-								backdropFilter: "blur(12px)",
-								minWidth: 200,
-								pointerEvents: "none",
-							}}
-						>
-							<div
-								style={{
-									color: "#fff",
-									fontWeight: 700,
-									fontSize: 13,
-									marginBottom: 4,
-								}}
-							>
-								{info.title}
-							</div>
-							{info.desc && (
-								<div style={{ color: "#ddd", fontSize: 11, marginBottom: 6 }}>
-									{info.desc}
-								</div>
-							)}
-							{info.location && (
-								<div style={{ color: "#69c0ff", fontSize: 10 }}>
-									📍 {info.location}
-								</div>
-							)}
-							<div
-								style={{
-									marginTop: 8,
-									paddingTop: 6,
-									borderTop: "1px solid rgba(255,255,255,0.1)",
-									color: "#aaa",
-									fontSize: 10,
-									lineHeight: 1.8,
-								}}
-							>
-								<div>
-									X {info.x} · Z {info.z} · H {info.h}
-								</div>
-							</div>
 						</div>
 					);
 				})()}
