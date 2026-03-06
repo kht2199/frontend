@@ -1,4 +1,4 @@
-import { Html, OrbitControls } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
 	forwardRef,
@@ -21,18 +21,6 @@ import { use3DModel } from "./use3DModel";
 export interface Campus3DRef {
 	setWarningBuildings: (names: string[]) => void;
 }
-
-import BUILDING_INFO_RAW from "./buildingInfo.json";
-
-type BuildingInfoEntry = {
-	title: string;
-	desc: string;
-	location: string;
-	x: number;
-	z: number;
-	h: number;
-};
-const BUILDING_INFO = BUILDING_INFO_RAW as Record<string, BuildingInfoEntry>;
 
 const CAM_POS = new THREE.Vector3(21, 13, -17);
 const CAM_TARGET = new THREE.Vector3(8, 9, -10);
@@ -262,54 +250,6 @@ function SceneAnimator({
 }
 
 /* ============================================================================
- * BuildingHoverTooltip — drei <Html>로 3D 월드 좌표에 툴팁 앵커
- * ============================================================================ */
-function BuildingHoverTooltip() {
-	const hoveredBuilding = useCampus3dStore((s) => s.hoveredBuilding);
-	if (!hoveredBuilding) return null;
-	const info = BUILDING_INFO[hoveredBuilding];
-	if (!info) return null;
-
-	return (
-		<Html position={[info.x, info.h, info.z]} style={{ pointerEvents: "none" }}>
-			<div
-				style={{
-					background: "rgba(10,12,24,0.95)",
-					border: "1px solid rgba(255,255,255,0.18)",
-					borderRadius: 8,
-					padding: "10px 14px",
-					backdropFilter: "blur(12px)",
-					minWidth: 200,
-					whiteSpace: "nowrap",
-					transform: "translate(12px, -50%)",
-				}}
-			>
-				<div
-					style={{
-						color: "#fff",
-						fontWeight: 700,
-						fontSize: 13,
-						marginBottom: 4,
-					}}
-				>
-					{info.title}
-				</div>
-				{info.desc && (
-					<div style={{ color: "#ddd", fontSize: 11, marginBottom: 6 }}>
-						{info.desc}
-					</div>
-				)}
-				{info.location && (
-					<div style={{ color: "#69c0ff", fontSize: 10 }}>
-						📍 {info.location}
-					</div>
-				)}
-			</div>
-		</Html>
-	);
-}
-
-/* ============================================================================
  * MinimapRenderer — scissor test로 탑뷰 미니맵 렌더 + 2D 오버레이 갱신
  * props 없음 — 모든 데이터를 useCampus3dStore.getState()로 읽음
  *
@@ -520,47 +460,17 @@ function CampusScene() {
 		mmCam.updateProjectionMatrix();
 	}, [groundBox]);
 
-	// 건물 클릭 핸들러
-	const handleClick = useCallback(
-		(e: {
-			stopPropagation: () => void;
-			object: THREE.Object3D;
-			clientX: number;
-			clientY: number;
-		}) => {
-			e.stopPropagation();
-			const name = findBuildingName(e.object, buildingGroupsRef.current);
-			if (name) {
-				const containerEl = useCampus3dStore.getState().containerEl;
-				const rect = containerEl?.getBoundingClientRect();
-				useCampus3dStore.setState({
-					buildingPopup: {
-						name,
-						x: e.clientX - (rect?.left ?? 0),
-						y: e.clientY - (rect?.top ?? 0),
-					},
-				});
-			} else {
-				useCampus3dStore.setState({ buildingPopup: null });
-			}
-		},
-		[buildingGroupsRef],
-	);
-
 	const handlePointerMove = useCallback(
 		(e: { stopPropagation: () => void; object: THREE.Object3D }) => {
 			e.stopPropagation();
 			const name = findBuildingName(e.object, buildingGroupsRef.current);
-			console.log("[raycast] hit:", e.object.name, "→ building:", name);
 			gl.domElement.style.cursor = name ? "pointer" : "default";
-			useCampus3dStore.setState({ hoveredBuilding: name ?? null });
 		},
 		[gl, buildingGroupsRef],
 	);
 
 	const handlePointerOut = useCallback(() => {
 		gl.domElement.style.cursor = "default";
-		useCampus3dStore.setState({ hoveredBuilding: null });
 	}, [gl]);
 
 	return (
@@ -634,10 +544,8 @@ function CampusScene() {
 
 			{/* 건물 모델 */}
 			{model && (
-				// biome-ignore lint/a11y/noStaticElementInteractions: R3F primitive, not HTML element
 				<primitive
 					object={model}
-					onClick={handleClick}
 					onPointerMove={handlePointerMove}
 					onPointerOut={handlePointerOut}
 				/>
@@ -657,9 +565,6 @@ function CampusScene() {
 
 			{/* 미니맵 렌더 */}
 			<MinimapRenderer />
-
-			{/* 호버 툴팁 — 3D 월드 좌표에 앵커 */}
-			<BuildingHoverTooltip />
 		</>
 	);
 }
@@ -675,7 +580,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 	const loading = useCampus3dStore((s) => s.loading);
 	const loadProgress = useCampus3dStore((s) => s.loadProgress);
 	const buildingNames = useCampus3dStore((s) => s.buildingNames);
-	const buildingPopup = useCampus3dStore((s) => s.buildingPopup);
 	const timeMode = useCampus3dStore((s) => s.timeMode);
 	const focusBuilding = useCampus3dStore((s) => s.focusBuilding);
 	const warningBuildings = useCampus3dStore((s) => s.warningBuildings);
@@ -701,7 +605,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 				tgtZEl: null,
 				loading: true,
 				loadProgress: 0,
-				buildingPopup: null,
 				focusBuilding: "",
 				warningBuildings: [],
 				timeMode: "morning",
@@ -815,9 +718,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 					toneMappingExposure: 1.6,
 				}}
 				style={{ width: "100%", height: "100%" }}
-				onPointerMissed={() =>
-					useCampus3dStore.setState({ buildingPopup: null })
-				}
 			>
 				<CampusScene />
 			</Canvas>
@@ -1122,66 +1022,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 			>
 				&#8634; Reset
 			</button>
-
-			{/* 건물 클릭 팝업 */}
-			{buildingPopup &&
-				(() => {
-					const info = BUILDING_INFO[buildingPopup.name];
-					return (
-						<div
-							style={{
-								position: "absolute",
-								left: buildingPopup.x + 14,
-								top: buildingPopup.y - 10,
-								zIndex: 200,
-								background: "rgba(10,12,24,0.92)",
-								border: "1px solid rgba(255,255,255,0.15)",
-								borderRadius: 8,
-								padding: "10px 14px",
-								backdropFilter: "blur(12px)",
-								minWidth: 200,
-								pointerEvents: "none",
-							}}
-						>
-							<div
-								style={{
-									color: "#fff",
-									fontWeight: 700,
-									fontSize: 13,
-									marginBottom: 4,
-								}}
-							>
-								{info?.title ?? buildingPopup.name}
-							</div>
-							{info?.desc && (
-								<div style={{ color: "#ddd", fontSize: 11, marginBottom: 6 }}>
-									{info.desc}
-								</div>
-							)}
-							{info?.location && (
-								<div style={{ color: "#69c0ff", fontSize: 10 }}>
-									📍 {info.location}
-								</div>
-							)}
-							{info && (
-								<div
-									style={{
-										marginTop: 8,
-										paddingTop: 6,
-										borderTop: "1px solid rgba(255,255,255,0.1)",
-										color: "#aaa",
-										fontSize: 10,
-										lineHeight: 1.8,
-									}}
-								>
-									<div>
-										X {info.x} · Z {info.z} · H {info.h}
-									</div>
-								</div>
-							)}
-						</div>
-					);
-				})()}
 
 			{/* 미니맵 */}
 			{/* biome-ignore lint/a11y/noStaticElementInteractions: minimap is a visual control */}
