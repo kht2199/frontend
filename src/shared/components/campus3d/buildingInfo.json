@@ -1,0 +1,18 @@
+{
+	"m14": {
+		"title": "M14 — Manufacturing Unit",
+		"desc": "Capacity: 240 lots/day · Status: Running",
+		"location": "Zone B, Bay 14",
+		"x": 0,
+		"z": 0,
+		"h": 0
+	},
+	"m16": {
+		"title": "M16 — Assembly Line",
+		"desc": "Capacity: 180 lots/day · Status: Warning",
+		"location": "Zone C, Bay 16",
+		"x": 0,
+		"z": 0,
+		"h": 0
+	}
+}

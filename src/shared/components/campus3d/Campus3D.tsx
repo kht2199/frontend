@@ -21,21 +21,17 @@ export interface Campus3DRef {
 	setWarningBuildings: (names: string[]) => void;
 }
 
-const BUILDING_INFO: Record<
-	string,
-	{ title: string; desc: string; location: string }
-> = {
-	m14: {
-		title: "M14 — Manufacturing Unit",
-		desc: "Capacity: 240 lots/day · Status: Running",
-		location: "Zone B, Bay 14",
-	},
-	m16: {
-		title: "M16 — Assembly Line",
-		desc: "Capacity: 180 lots/day · Status: Warning",
-		location: "Zone C, Bay 16",
-	},
+import BUILDING_INFO_RAW from "./buildingInfo.json";
+
+type BuildingInfoEntry = {
+	title: string;
+	desc: string;
+	location: string;
+	x: number;
+	z: number;
+	h: number;
 };
+const BUILDING_INFO = BUILDING_INFO_RAW as Record<string, BuildingInfoEntry>;
 
 const CAM_POS = new THREE.Vector3(21, 13, -17);
 const CAM_TARGET = new THREE.Vector3(8, 9, -10);
@@ -1178,6 +1174,22 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 							{info?.location && (
 								<div style={{ color: "#69c0ff", fontSize: 10 }}>
 									📍 {info.location}
+								</div>
+							)}
+							{info && (
+								<div
+									style={{
+										marginTop: 8,
+										paddingTop: 6,
+										borderTop: "1px solid rgba(255,255,255,0.1)",
+										color: "#aaa",
+										fontSize: 10,
+										lineHeight: 1.8,
+									}}
+								>
+									<div>
+										X {info.x} · Z {info.z} · H {info.h}
+									</div>
 								</div>
 							)}
 						</div>
