@@ -84,9 +84,17 @@ export function use3DModel() {
 				const warnings: THREE.Mesh[] = [];
 				const windows: THREE.Mesh[] = [];
 
-				for (const child of gltfModel.children) {
-					if (child.name) buildingGroups[child.name] = child;
-				}
+				const skipNames = new Set(["Scene", "Ground"]);
+				gltfModel.traverse((child) => {
+					if (
+						child !== gltfModel &&
+						child.name &&
+						!(child as THREE.Mesh).isMesh &&
+						!skipNames.has(child.name)
+					) {
+						buildingGroups[child.name] = child;
+					}
+				});
 
 				gltfModel.traverse((child) => {
 					if ((child as THREE.Mesh).isMesh) {
