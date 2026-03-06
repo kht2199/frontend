@@ -26,7 +26,6 @@ interface Campus3DState {
 	// ── DOM 요소 (Campus3D HTML 컴포넌트가 채움, useFrame에서 직접 갱신) ────
 	containerEl: HTMLDivElement | null;
 	minimap2dEl: HTMLCanvasElement | null;
-	buildingLabelEls: Record<string, HTMLDivElement | null>;
 	camInputFocused: boolean;
 	camXEl: HTMLInputElement | null;
 	camYEl: HTMLInputElement | null;
@@ -55,7 +54,6 @@ export const useCampus3dStore = create<Campus3DState>()(() => ({
 
 	containerEl: null,
 	minimap2dEl: null,
-	buildingLabelEls: {},
 	camInputFocused: false,
 	camXEl: null,
 	camYEl: null,

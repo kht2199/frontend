@@ -94,9 +94,6 @@ function SceneAnimator({
 		const {
 			timeMode,
 			camInputFocused,
-			containerEl,
-			buildingLabelEls,
-			buildingBoxes,
 			camXEl,
 			camYEl,
 			camZEl,
@@ -255,28 +252,6 @@ function SceneAnimator({
 			if (tgtXEl) tgtXEl.value = Math.round(controls.target.x).toString();
 			if (tgtYEl) tgtYEl.value = Math.round(controls.target.y).toString();
 			if (tgtZEl) tgtZEl.value = Math.round(controls.target.z).toString();
-		}
-
-		// 건물 라벨 3D→2D 투영
-		const canvasRect = gl.domElement.getBoundingClientRect();
-		const ctnRect = containerEl?.getBoundingClientRect();
-		const ox = canvasRect.left - (ctnRect?.left ?? 0);
-		const oy = canvasRect.top - (ctnRect?.top ?? 0);
-		for (const [name, el] of Object.entries(buildingLabelEls)) {
-			if (!el) continue;
-			const box = buildingBoxes[name];
-			if (!box) {
-				el.style.display = "none";
-				continue;
-			}
-			const proj = box.center.clone().project(camera);
-			if (proj.z > 1) {
-				el.style.display = "none";
-				continue;
-			}
-			el.style.left = `${(proj.x * 0.5 + 0.5) * canvasRect.width + ox}px`;
-			el.style.top = `${(1 - (proj.y * 0.5 + 0.5)) * canvasRect.height + oy - 32}px`;
-			el.style.display = "block";
 		}
 	});
 
@@ -706,7 +681,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 				buildingNames: [],
 				containerEl: null,
 				minimap2dEl: null,
-				buildingLabelEls: {},
 				camXEl: null,
 				camYEl: null,
 				camZEl: null,
@@ -1137,57 +1111,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 			>
 				&#8634; Reset
 			</button>
-
-			{/* 상시 건물 라벨 (m14, m16) */}
-			{Object.keys(BUILDING_INFO).map((name) => {
-				const info = BUILDING_INFO[name];
-				return (
-					<div
-						key={name}
-						ref={(el) =>
-							useCampus3dStore.setState({
-								buildingLabelEls: {
-									...useCampus3dStore.getState().buildingLabelEls,
-									[name]: el,
-								},
-							})
-						}
-						style={{
-							position: "absolute",
-							display: "none",
-							transform: "translateX(-50%)",
-							pointerEvents: "none",
-							zIndex: 60,
-							textAlign: "center",
-						}}
-					>
-						<div
-							style={{
-								background: "rgba(10,12,24,0.82)",
-								border: "1px solid rgba(255,255,255,0.15)",
-								borderRadius: 6,
-								padding: "4px 10px",
-								backdropFilter: "blur(8px)",
-							}}
-						>
-							<div style={{ color: "#fff", fontWeight: 700, fontSize: 12 }}>
-								{info.title.split(" — ")[0]}
-							</div>
-							<div style={{ color: "#69c0ff", fontSize: 10 }}>
-								{info.location}
-							</div>
-						</div>
-						<div
-							style={{
-								width: 1,
-								height: 8,
-								background: "rgba(255,255,255,0.4)",
-								margin: "0 auto",
-							}}
-						/>
-					</div>
-				);
-			})}
 
 			{/* 건물 클릭 팝업 */}
 			{buildingPopup &&
