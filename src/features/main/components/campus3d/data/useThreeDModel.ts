@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { loadCompressedGLB } from "../../../lib/loaders";
+import { loadCompressedGLB } from "../../../../../shared/lib/loaders";
 import { useCampus3dStore } from "../store/campus3dStore";
 
 /* ============================================================================
