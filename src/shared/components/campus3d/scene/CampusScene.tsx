@@ -37,7 +37,6 @@ export function CampusScene() {
 		model,
 		buildingGroupsRef,
 		buildingNames,
-		groundBox,
 		warningsRef,
 		warningMeshesRef,
 		setWarningBuildings,
@@ -53,7 +52,7 @@ export function CampusScene() {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: scene is stable from useThree
 	useLayoutEffect(() => {
 		scene.background = new THREE.Color(0x345384);
-		const mmCam = new THREE.OrthographicCamera(-500, 500, 500, -500, 1, 2000);
+		const mmCam = new THREE.OrthographicCamera(-20, 40, 60, -20, 1, 2000);
 		mmCam.up.set(0, 0, 1);
 		mmCam.position.set(CAM_TARGET.x, 800, CAM_TARGET.z);
 		mmCam.lookAt(CAM_TARGET.x, 0, CAM_TARGET.z);
@@ -94,26 +93,6 @@ export function CampusScene() {
 			buildingBoxes: boxes,
 		});
 	}, [buildingNames]);
-
-	// Ground 박스로 미니맵 카메라 범위 설정
-	useEffect(() => {
-		if (!groundBox) return;
-		const mmCam = useCampus3dStore.getState().minimapCamera;
-		if (!mmCam) return;
-		const center = new THREE.Vector3();
-		groundBox.getCenter(center);
-		const size = new THREE.Vector3();
-		groundBox.getSize(size);
-		const half = (Math.max(size.x, size.z) / 2) * 0.6;
-		mmCam.left = -half;
-		mmCam.right = half;
-		mmCam.top = half;
-		mmCam.bottom = -half;
-		mmCam.up.set(0, 0, 1);
-		mmCam.position.set(center.x, 800, center.z);
-		mmCam.lookAt(center.x, 0, center.z);
-		mmCam.updateProjectionMatrix();
-	}, [groundBox]);
 
 	const handlePointerMove = useCallback(
 		(e: { stopPropagation: () => void; object: THREE.Object3D }) => {

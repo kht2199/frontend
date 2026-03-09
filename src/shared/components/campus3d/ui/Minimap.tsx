@@ -1,6 +1,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useCallback, useRef } from "react";
 import * as THREE from "three";
+import { MINIMAP_BUILDINGS } from "../constants";
 import { useCampus3dStore } from "../store/campus3dStore";
 
 export const MM_SIZE = 180;
@@ -49,40 +50,17 @@ export function MinimapRenderer() {
 		if (!ctx) return;
 		ctx.clearRect(0, 0, MM_SIZE, MM_SIZE);
 
+		camera.updateWorldMatrix(true, false);
+		mmCam.updateWorldMatrix(true, false);
+
 		const camProj = camera.position.clone().project(mmCam);
 		const px = (camProj.x * 0.5 + 0.5) * MM_SIZE;
 		const py = (1 - (camProj.y * 0.5 + 0.5)) * MM_SIZE;
 
-		const dir = new THREE.Vector3();
-		camera.getWorldDirection(dir);
-		const frontProj = camera.position
-			.clone()
-			.addScaledVector(dir, 300)
-			.project(mmCam);
-		const fx = (frontProj.x * 0.5 + 0.5) * MM_SIZE;
-		const fy = (1 - (frontProj.y * 0.5 + 0.5)) * MM_SIZE;
-
-		const angle = Math.atan2(fy - py, fx - px);
-		const hFov =
-			((camera as THREE.PerspectiveCamera).fov *
-				(Math.PI / 180) *
-				(camera as THREE.PerspectiveCamera).aspect) /
-			2;
-		const fLen = 80;
-		ctx.beginPath();
-		ctx.moveTo(px, py);
-		ctx.arc(px, py, fLen, angle - hFov, angle + hFov);
-		ctx.closePath();
-		ctx.fillStyle = "rgba(255,220,50,0.2)";
-		ctx.fill();
-		ctx.strokeStyle = "rgba(255,220,50,0.85)";
-		ctx.lineWidth = 1.5;
-		ctx.stroke();
-
-		// 건물 마커 (m14, m16)
+		// 건물 마커
 		for (const [name, { corners, center }] of Object.entries(
 			buildingBoxes,
-		).filter(([n]) => n === "m14" || n === "m16")) {
+		).filter(([n]) => MINIMAP_BUILDINGS.includes(n))) {
 			const pts = corners.map((c) => {
 				const p = c.clone().project(mmCam);
 				return {

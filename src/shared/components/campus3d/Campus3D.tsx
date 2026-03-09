@@ -52,6 +52,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 			style={{ width: "100%", height: "100%", position: "relative" }}
 		>
 			<Canvas
+				frameloop="always"
 				camera={{
 					fov: 45,
 					position: CAM_POS.toArray() as [number, number, number],
