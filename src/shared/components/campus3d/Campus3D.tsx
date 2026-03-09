@@ -5,12 +5,15 @@ import {
 	useCallback,
 	useEffect,
 	useImperativeHandle,
+	useLayoutEffect,
 	useRef,
 } from "react";
 import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { getSkyParams } from "./buildingData";
 import { useCampus3dStore } from "./campus3dStore";
+import { LoadingOverlay } from "./LoadingOverlay";
+import { MinimapOverlay, MinimapRenderer } from "./Minimap";
 import type { TimeMode } from "./types";
 import { use3DModel } from "./use3DModel";
 
@@ -27,8 +30,6 @@ const DEG15 = (15 * Math.PI) / 180;
 const INIT_PHI = 1.04;
 export const ANGLE_STEP = (5 * Math.PI) / 180;
 
-const MM_SIZE = 180;
-const MM_MARGIN = 12;
 const SKIP_NAMES = new Set(["Scene", "Ground"]);
 
 /* ============================================================================
@@ -53,26 +54,20 @@ function findBuildingName(
  * ============================================================================ */
 interface SceneAnimatorProps {
 	warningsRef: React.MutableRefObject<THREE.Mesh[]>;
-	windowsRef: React.MutableRefObject<THREE.Mesh[]>;
-	smokesRef: React.MutableRefObject<THREE.Points[]>;
 	warningMeshesRef: React.MutableRefObject<THREE.Mesh[]>;
 	lightsRef: React.MutableRefObject<{
 		ambient: THREE.AmbientLight | null;
 		dirLight: THREE.DirectionalLight | null;
 	}>;
 	sunMeshRef: React.MutableRefObject<THREE.Mesh | null>;
-	moonMeshRef: React.MutableRefObject<THREE.Mesh | null>;
 	startTimeRef: React.MutableRefObject<number>;
 }
 
 function SceneAnimator({
 	warningsRef,
-	windowsRef,
-	smokesRef,
 	warningMeshesRef,
 	lightsRef,
 	sunMeshRef,
-	moonMeshRef,
 	startTimeRef,
 }: SceneAnimatorProps) {
 	const { gl, camera, scene } = useThree();
@@ -102,8 +97,10 @@ function SceneAnimator({
 		}
 
 		const sky = getSkyParams(hours);
-		(scene.background as THREE.Color).setRGB(sky.r, sky.g, sky.b);
-		(scene.fog as THREE.FogExp2).color.setRGB(sky.r, sky.g, sky.b);
+		if (scene.background instanceof THREE.Color)
+			scene.background.setRGB(sky.r, sky.g, sky.b);
+		if (scene.fog instanceof THREE.FogExp2)
+			scene.fog.color.setRGB(sky.r, sky.g, sky.b);
 
 		const lights = lightsRef.current;
 		if (lights.ambient) lights.ambient.intensity = sky.ambientIntensity;
@@ -124,22 +121,6 @@ function SceneAnimator({
 			if (lights.dirLight) lights.dirLight.position.set(100, 300, 100);
 		}
 
-		// 달 위치
-		if (moonMeshRef.current) {
-			if (sky.moonUp) {
-				const mx = 35 - 800 * Math.cos(sky.moonAngle);
-				const my = 800 * Math.sin(sky.moonAngle) * 0.6;
-				moonMeshRef.current.position.set(mx, Math.max(my, -20), 170 + 150);
-				moonMeshRef.current.visible = true;
-				const ml = moonMeshRef.current.children.find(
-					(c): c is THREE.PointLight => (c as THREE.PointLight).isPointLight,
-				);
-				if (ml) ml.intensity = sky.moonIntensity;
-			} else {
-				moonMeshRef.current.visible = false;
-			}
-		}
-
 		// 경고등 점멸
 		for (const mesh of warningsRef.current) {
 			if (mesh.material && "emissiveIntensity" in mesh.material) {
@@ -148,64 +129,11 @@ function SceneAnimator({
 			}
 		}
 
-		// 연기 파티클
-		for (const smoke of smokesRef.current) {
-			const pos = smoke.geometry.attributes.position.array as Float32Array;
-			const sd = smoke.userData.smokeData as {
-				baseX: number;
-				baseY: number;
-				baseZ: number;
-				count: number;
-				topRadius: number;
-			};
-			for (let i = 0; i < sd.count; i++) {
-				pos[i * 3] +=
-					(Math.random() - 0.5) * 0.1 + Math.sin(elapsed * 0.0008 + i) * 0.04;
-				pos[i * 3 + 1] += 0.1 + Math.random() * 0.06;
-				pos[i * 3 + 2] += (Math.random() - 0.5) * 0.08;
-				if (pos[i * 3 + 1] > sd.baseY + 25) {
-					pos[i * 3] = sd.baseX + (Math.random() - 0.5) * sd.topRadius * 2;
-					pos[i * 3 + 1] = sd.baseY;
-					pos[i * 3 + 2] = sd.baseZ + (Math.random() - 0.5) * sd.topRadius * 2;
-				}
-			}
-			smoke.geometry.attributes.position.needsUpdate = true;
-			(smoke.material as THREE.PointsMaterial).opacity =
-				0.15 + Math.sin(elapsed * 0.003) * 0.05;
-		}
-
 		// 경고 건물 점멸
 		for (const mesh of warningMeshesRef.current) {
 			if (!mesh.material || !("emissiveIntensity" in mesh.material)) continue;
 			(mesh.material as THREE.MeshStandardMaterial).emissiveIntensity =
 				0.05 + ((Math.sin(elapsed * 0.005) + 1) / 2) * 0.75;
-		}
-
-		// 창문 재질
-		for (const mesh of windowsRef.current) {
-			if (!mesh.material) continue;
-			if (!mesh.userData._matCloned) {
-				mesh.material = (
-					mesh.material as THREE.Material
-				).clone() as THREE.MeshStandardMaterial;
-				mesh.userData._matCloned = true;
-			}
-			const mat = mesh.material as THREE.MeshStandardMaterial;
-			if (sky.isNight) {
-				mat.color.setHex(0xffdd88);
-				mat.emissive.setHex(0xffaa33);
-				mat.emissiveIntensity = 1.5;
-				mat.transparent = true;
-				mat.opacity = 0.9;
-				if (Math.random() < 0.01)
-					mat.emissiveIntensity = 0.8 + Math.random() * 1.2;
-			} else {
-				mat.color.setHex(0x8ac4ed);
-				mat.emissive.setHex(0x3388bb);
-				mat.emissiveIntensity = 0.15;
-				mat.transparent = true;
-				mat.opacity = 0.5;
-			}
 		}
 
 		// 카메라 각도 스냅
@@ -247,111 +175,6 @@ function SceneAnimator({
 }
 
 /* ============================================================================
- * MinimapRenderer — scissor test로 탑뷰 미니맵 렌더 + 2D 오버레이 갱신
- * props 없음 — 모든 데이터를 useCampus3dStore.getState()로 읽음
- * ============================================================================ */
-function MinimapRenderer() {
-	const { gl, scene, camera } = useThree();
-
-	useFrame(() => {
-		const {
-			minimapCamera: mmCam,
-			minimap2dEl,
-			buildingBoxes,
-		} = useCampus3dStore.getState();
-		if (!mmCam) return;
-
-		const rw = gl.domElement.width;
-		const rh = gl.domElement.height;
-		const dpr = gl.getPixelRatio();
-		const mmPx = Math.round(MM_SIZE * dpr);
-		const marginPx = Math.round(MM_MARGIN * dpr);
-
-		gl.autoClear = false;
-		gl.setViewport(rw - mmPx - marginPx, marginPx, mmPx, mmPx);
-		gl.setScissor(rw - mmPx - marginPx, marginPx, mmPx, mmPx);
-		gl.setScissorTest(true);
-		gl.clearDepth();
-		gl.render(scene, mmCam);
-		gl.setScissorTest(false);
-		gl.setViewport(0, 0, rw, rh);
-		gl.autoClear = true;
-
-		// 2D 오버레이
-		if (!minimap2dEl) return;
-		const ctx = minimap2dEl.getContext("2d");
-		if (!ctx) return;
-		ctx.clearRect(0, 0, MM_SIZE, MM_SIZE);
-
-		const camProj = camera.position.clone().project(mmCam);
-		const px = (camProj.x * 0.5 + 0.5) * MM_SIZE;
-		const py = (1 - (camProj.y * 0.5 + 0.5)) * MM_SIZE;
-
-		const dir = new THREE.Vector3();
-		camera.getWorldDirection(dir);
-		const frontProj = camera.position
-			.clone()
-			.addScaledVector(dir, 300)
-			.project(mmCam);
-		const fx = (frontProj.x * 0.5 + 0.5) * MM_SIZE;
-		const fy = (1 - (frontProj.y * 0.5 + 0.5)) * MM_SIZE;
-
-		const angle = Math.atan2(fy - py, fx - px);
-		const hFov =
-			((camera as THREE.PerspectiveCamera).fov *
-				(Math.PI / 180) *
-				(camera as THREE.PerspectiveCamera).aspect) /
-			2;
-		const fLen = 80;
-		ctx.beginPath();
-		ctx.moveTo(px, py);
-		ctx.arc(px, py, fLen, angle - hFov, angle + hFov);
-		ctx.closePath();
-		ctx.fillStyle = "rgba(255,220,50,0.2)";
-		ctx.fill();
-		ctx.strokeStyle = "rgba(255,220,50,0.85)";
-		ctx.lineWidth = 1.5;
-		ctx.stroke();
-
-		// 건물 마커 (m14, m16)
-		for (const [name, { corners, center }] of Object.entries(
-			buildingBoxes,
-		).filter(([n]) => n === "m14" || n === "m16")) {
-			const pts = corners.map((c) => {
-				const p = c.clone().project(mmCam);
-				return {
-					x: (p.x * 0.5 + 0.5) * MM_SIZE,
-					y: (1 - (p.y * 0.5 + 0.5)) * MM_SIZE,
-				};
-			});
-			ctx.beginPath();
-			ctx.moveTo(pts[0].x, pts[0].y);
-			for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-			ctx.closePath();
-			ctx.fillStyle = "rgba(120,210,255,0.25)";
-			ctx.fill();
-			ctx.strokeStyle = "rgba(120,210,255,0.75)";
-			ctx.lineWidth = 0.8;
-			ctx.stroke();
-			const cp = center.clone().project(mmCam);
-			const cx = (cp.x * 0.5 + 0.5) * MM_SIZE;
-			const cy = (1 - (cp.y * 0.5 + 0.5)) * MM_SIZE;
-			ctx.fillStyle = "rgba(200,240,255,0.9)";
-			ctx.font = "8px monospace";
-			ctx.fillText(name, cx + 2, cy + 3);
-		}
-
-		// 카메라 위치 점
-		ctx.beginPath();
-		ctx.arc(px, py, 4, 0, Math.PI * 2);
-		ctx.fillStyle = "#ffdc32";
-		ctx.fill();
-	}, 1); // priority=1: 기본 렌더 후 실행
-
-	return null;
-}
-
-/* ============================================================================
  * CampusScene — Canvas 내부 R3F 씬 컴포넌트 (props 없음)
  * use3DModel을 직접 호출하고, 로컬 mesh ref들을 SceneAnimator에 전달
  * ============================================================================ */
@@ -362,7 +185,6 @@ function CampusScene() {
 		dirLight: THREE.DirectionalLight | null;
 	}>({ ambient: null, dirLight: null });
 	const sunMeshRef = useRef<THREE.Mesh | null>(null);
-	const moonMeshRef = useRef<THREE.Mesh | null>(null);
 	const startTimeRef = useRef(Date.now());
 
 	const {
@@ -371,8 +193,6 @@ function CampusScene() {
 		buildingNames,
 		groundBox,
 		warningsRef,
-		windowsRef,
-		smokesRef,
 		warningMeshesRef,
 		setWarningBuildings,
 	} = use3DModel();
@@ -384,8 +204,9 @@ function CampusScene() {
 	}, [warningBuildings, setWarningBuildings]);
 
 	// 씬 배경/안개 + 미니맵 카메라 초기화
+	// useLayoutEffect: 첫 useFrame 실행 전에 scene.background가 확실히 설정되도록
 	// biome-ignore lint/correctness/useExhaustiveDependencies: scene is stable from useThree
-	useEffect(() => {
+	useLayoutEffect(() => {
 		scene.background = new THREE.Color(0x345384);
 		scene.fog = new THREE.FogExp2(0x345384, 0.0006);
 		const mmCam = new THREE.OrthographicCamera(-500, 500, 500, -500, 1, 2000);
@@ -506,17 +327,6 @@ function CampusScene() {
 				</mesh>
 			</mesh>
 
-			{/* 달 */}
-			<mesh ref={moonMeshRef} visible={false}>
-				<sphereGeometry args={[20, 32, 32]} />
-				<meshBasicMaterial color={0xfffff0} />
-				<mesh>
-					<sphereGeometry args={[30, 32, 32]} />
-					<meshBasicMaterial color={0xcceeff} transparent opacity={0.25} />
-				</mesh>
-				<pointLight color={0x8899cc} intensity={0} distance={800} />
-			</mesh>
-
 			{/* OrbitControls — 마운트 시 스토어에 등록 */}
 			<OrbitControls
 				ref={(el: OrbitControlsImpl | null) => {
@@ -544,12 +354,9 @@ function CampusScene() {
 			{/* 애니메이션 루프 */}
 			<SceneAnimator
 				warningsRef={warningsRef}
-				windowsRef={windowsRef}
-				smokesRef={smokesRef}
 				warningMeshesRef={warningMeshesRef}
 				lightsRef={lightsRef}
 				sunMeshRef={sunMeshRef}
-				moonMeshRef={moonMeshRef}
 				startTimeRef={startTimeRef}
 			/>
 
@@ -564,11 +371,7 @@ function CampusScene() {
  * UI 상태는 useCampus3dStore 셀렉터로 읽고, 이벤트 핸들러는 getState()로 직접 접근
  * ============================================================================ */
 const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
-	const minimapDraggingRef = useRef(false);
-
 	// UI 상태 구독
-	const loading = useCampus3dStore((s) => s.loading);
-	const loadProgress = useCampus3dStore((s) => s.loadProgress);
 	const buildingNames = useCampus3dStore((s) => s.buildingNames);
 	const timeMode = useCampus3dStore((s) => s.timeMode);
 	const focusBuilding = useCampus3dStore((s) => s.focusBuilding);
@@ -607,55 +410,6 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 		setWarningBuildings: (names) =>
 			useCampus3dStore.setState({ warningBuildings: names }),
 	}));
-
-	// 미니맵 드래그 → 카메라 이동
-	const moveMinimapCamera = useCallback(
-		(e: React.MouseEvent<HTMLDivElement>) => {
-			const {
-				controls,
-				camera: cam,
-				minimapCamera: mmCam,
-			} = useCampus3dStore.getState();
-			if (!mmCam || !controls || !cam) return;
-			const rect = e.currentTarget.getBoundingClientRect();
-			const clickX = e.clientX - rect.left;
-			const clickY = e.clientY - rect.top;
-			const ndc = new THREE.Vector3(
-				(clickX / MM_SIZE) * 2 - 1,
-				-((clickY / MM_SIZE) * 2 - 1),
-				0,
-			);
-			ndc.unproject(mmCam);
-			const offset = new THREE.Vector3().subVectors(
-				cam.position,
-				controls.target,
-			);
-			controls.target.set(ndc.x, controls.target.y, ndc.z);
-			cam.position.copy(controls.target).add(offset);
-			controls.update();
-		},
-		[],
-	);
-
-	const handleMinimapMouseDown = useCallback(
-		(e: React.MouseEvent<HTMLDivElement>) => {
-			minimapDraggingRef.current = true;
-			moveMinimapCamera(e);
-		},
-		[moveMinimapCamera],
-	);
-
-	const handleMinimapMouseMove = useCallback(
-		(e: React.MouseEvent<HTMLDivElement>) => {
-			if (!minimapDraggingRef.current) return;
-			moveMinimapCamera(e);
-		},
-		[moveMinimapCamera],
-	);
-
-	const handleMinimapMouseUp = useCallback(() => {
-		minimapDraggingRef.current = false;
-	}, []);
 
 	// 건물 포커스
 	const handleFocusBuilding = useCallback((name: string) => {
@@ -712,53 +466,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 				<CampusScene />
 			</Canvas>
 
-			{/* 로딩 오버레이 */}
-			{loading && (
-				<div
-					style={{
-						position: "absolute",
-						inset: 0,
-						display: "flex",
-						flexDirection: "column",
-						alignItems: "center",
-						justifyContent: "center",
-						background: "rgba(10,10,20,0.95)",
-						zIndex: 1000,
-					}}
-				>
-					<div
-						style={{
-							fontSize: 13,
-							color: "#888",
-							letterSpacing: 3,
-							marginBottom: 16,
-						}}
-					>
-						Loading...
-					</div>
-					<div
-						style={{
-							width: 200,
-							height: 4,
-							background: "rgba(255,255,255,0.1)",
-							borderRadius: 2,
-						}}
-					>
-						<div
-							style={{
-								width: `${loadProgress}%`,
-								height: "100%",
-								background: "linear-gradient(90deg, #4af, #48bb78)",
-								borderRadius: 2,
-								transition: "width 0.3s",
-							}}
-						/>
-					</div>
-					<div style={{ fontSize: 12, color: "#666", marginTop: 8 }}>
-						{loadProgress}%
-					</div>
-				</div>
-			)}
+			<LoadingOverlay />
 
 			{/* 상단 좌측 컨트롤 */}
 			<div
@@ -1013,34 +721,7 @@ const Campus3D = forwardRef<Campus3DRef>(function Campus3D(_, ref) {
 				&#8634; Reset
 			</button>
 
-			{/* 미니맵 */}
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: minimap is a visual control */}
-			<div
-				onMouseDown={handleMinimapMouseDown}
-				onMouseMove={handleMinimapMouseMove}
-				onMouseUp={handleMinimapMouseUp}
-				onMouseLeave={handleMinimapMouseUp}
-				style={{
-					position: "absolute",
-					bottom: MM_MARGIN,
-					right: MM_MARGIN,
-					width: MM_SIZE,
-					height: MM_SIZE,
-					borderRadius: 8,
-					border: "1px solid rgba(255,255,255,0.12)",
-					background: "rgba(5,6,16,0.6)",
-					overflow: "hidden",
-					cursor: "crosshair",
-					zIndex: 50,
-				}}
-			>
-				<canvas
-					ref={(el) => useCampus3dStore.setState({ minimap2dEl: el })}
-					width={MM_SIZE}
-					height={MM_SIZE}
-					style={{ position: "absolute", top: 0, left: 0 }}
-				/>
-			</div>
+			<MinimapOverlay />
 
 			<style>{`
         @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
