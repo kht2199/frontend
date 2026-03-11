@@ -30,7 +30,6 @@ export function CampusScene() {
 		ambient: THREE.AmbientLight | null;
 		dirLight: THREE.DirectionalLight | null;
 	}>({ ambient: null, dirLight: null });
-	const sunMeshRef = useRef<THREE.Mesh | null>(null);
 	const startTimeRef = useRef(Date.now());
 
 	const {
@@ -51,7 +50,7 @@ export function CampusScene() {
 	// 씬 배경/안개 + 미니맵 카메라 초기화
 	// biome-ignore lint/correctness/useExhaustiveDependencies: scene is stable from useThree
 	useLayoutEffect(() => {
-		scene.background = new THREE.Color(0x345384);
+		scene.background = new THREE.Color(0xffffff);
 		const mmCam = new THREE.OrthographicCamera(-20, 40, 60, -20, 1, 2000);
 		mmCam.up.set(0, 0, 1);
 		mmCam.position.set(CAM_TARGET.x, 800, CAM_TARGET.z);
@@ -136,20 +135,6 @@ export function CampusScene() {
 				shadow-normalBias={0.02}
 			/>
 
-			{/* 태양 */}
-			<mesh ref={sunMeshRef} visible={false}>
-				<sphereGeometry args={[22, 32, 32]} />
-				<meshBasicMaterial color={0xffee66} />
-				<mesh>
-					<sphereGeometry args={[35, 32, 32]} />
-					<meshBasicMaterial color={0xffcc33} transparent opacity={0.3} />
-				</mesh>
-				<mesh>
-					<sphereGeometry args={[50, 32, 32]} />
-					<meshBasicMaterial color={0xffaa22} transparent opacity={0.12} />
-				</mesh>
-			</mesh>
-
 			{/* OrbitControls — 마운트 시 스토어에 등록 */}
 			<OrbitControls
 				ref={(el: OrbitControlsImpl | null) => {
@@ -179,7 +164,6 @@ export function CampusScene() {
 				warningsRef={warningsRef}
 				warningMeshesRef={warningMeshesRef}
 				lightsRef={lightsRef}
-				sunMeshRef={sunMeshRef}
 				startTimeRef={startTimeRef}
 			/>
 

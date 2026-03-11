@@ -11,7 +11,6 @@ export interface SceneAnimatorProps {
 		ambient: THREE.AmbientLight | null;
 		dirLight: THREE.DirectionalLight | null;
 	}>;
-	sunMeshRef: React.MutableRefObject<THREE.Mesh | null>;
 	startTimeRef: React.MutableRefObject<number>;
 }
 
@@ -19,10 +18,9 @@ export function SceneAnimator({
 	warningsRef,
 	warningMeshesRef,
 	lightsRef,
-	sunMeshRef,
 	startTimeRef,
 }: SceneAnimatorProps) {
-	const { gl, camera, scene } = useThree();
+	const { gl, camera } = useThree();
 
 	useFrame(() => {
 		const elapsed = Date.now() - startTimeRef.current;
@@ -41,8 +39,6 @@ export function SceneAnimator({
 		const hours = 10; // 아침 고정
 
 		const sky = getSkyParams(hours);
-		if (scene.background instanceof THREE.Color)
-			scene.background.setRGB(sky.r, sky.g, sky.b);
 		const lights = lightsRef.current;
 		if (lights.ambient) lights.ambient.intensity = sky.ambientIntensity;
 		if (lights.dirLight) {
@@ -50,17 +46,6 @@ export function SceneAnimator({
 			lights.dirLight.color.setHex(sky.dirColor);
 		}
 		gl.toneMappingExposure = sky.exposure;
-
-		// 태양 위치
-		if (sky.sunPos && sunMeshRef.current) {
-			sunMeshRef.current.position.set(sky.sunPos.x, sky.sunPos.y, sky.sunPos.z);
-			sunMeshRef.current.visible = true;
-			if (sky.sunUp && lights.dirLight)
-				lights.dirLight.position.copy(sunMeshRef.current.position);
-		} else if (sunMeshRef.current) {
-			sunMeshRef.current.visible = false;
-			if (lights.dirLight) lights.dirLight.position.set(100, 300, 100);
-		}
 
 		// 경고등 점멸
 		for (const mesh of warningsRef.current) {
