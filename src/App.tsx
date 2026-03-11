@@ -1,17 +1,17 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
-import AlertHistoryPage from "./features/alert-history/AlertHistoryPage";
-import AlertSettingPage from "./features/alert-setting/AlertSettingPage";
-import ContactManagementPage from "./features/contact-management/ContactManagementPage";
-import LlmPage from "./features/llm/LlmPage";
-import MainPage from "./features/main/MainPage";
-import BridgeMonitoringPage from "./features/monitoring/BridgeMonitoringPage";
-import FabCustomMonitoringPage from "./features/monitoring/FabCustomMonitoringPage";
-import FabLayoutMonitoringPage from "./features/monitoring/FabLayoutMonitoringPage";
-import FabMonitoringPage from "./features/monitoring/FabMonitoringPage";
-import ServerMonitoringPage from "./features/monitoring/ServerMonitoringPage";
-import AmChartsSamplePage from "./features/samples/AmChartsSamplePage";
-import EChartsSamplePage from "./features/samples/EChartsSamplePage";
 import DefaultLayout from "./layouts/DefaultLayout";
+import AlertHistoryPage from "./pages/alert-history/AlertHistoryPage";
+import AlertSettingPage from "./pages/alert-setting/AlertSettingPage";
+import ContactManagementPage from "./pages/contact-management/ContactManagementPage";
+import LlmPage from "./pages/llm/LlmPage";
+import MainPage from "./pages/main/MainPage";
+import BridgeMonitoringPage from "./pages/monitoring/BridgeMonitoringPage";
+import FabCustomMonitoringPage from "./pages/monitoring/FabCustomMonitoringPage";
+import FabLayoutMonitoringPage from "./pages/monitoring/FabLayoutMonitoringPage";
+import FabMonitoringPage from "./pages/monitoring/FabMonitoringPage";
+import ServerMonitoringPage from "./pages/monitoring/ServerMonitoringPage";
+import AmChartsSamplePage from "./pages/samples/AmChartsSamplePage";
+import EChartsSamplePage from "./pages/samples/EChartsSamplePage";
 
 export default function App() {
 	return (
