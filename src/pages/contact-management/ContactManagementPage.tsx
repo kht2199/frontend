@@ -95,9 +95,19 @@ export default function ContactManagementPage() {
 	}, [notificationApi]);
 
 	return (
-		<>
+		<div
+			style={{
+				display: "flex",
+				flexDirection: "column",
+				width: "100%",
+				height: "100%",
+				overflow: "hidden",
+			}}
+		>
 			{contextHolder}
-			<Typography.Title level={3}>연락처 관리</Typography.Title>
+			<Typography.Title level={3} style={{ flexShrink: 0, marginBottom: 8 }}>
+				연락처 관리
+			</Typography.Title>
 
 			<Form layout="inline" style={{ marginBottom: 16 }}>
 				<Form.Item label="조회항목">
@@ -132,7 +142,7 @@ export default function ContactManagementPage() {
 				</Button>
 			</Space>
 
-			<div className="ag-theme-quartz" style={{ height: 600 }}>
+			<div className="ag-theme-quartz" style={{ flex: 1, minHeight: 0 }}>
 				<AgGridReact<ContactRecord>
 					ref={gridRef}
 					rowData={filteredData}
@@ -147,6 +157,6 @@ export default function ContactManagementPage() {
 					stopEditingWhenCellsLoseFocus={true}
 				/>
 			</div>
-		</>
+		</div>
 	);
 }

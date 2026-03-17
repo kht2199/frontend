@@ -8,8 +8,17 @@ import EChartsPieChart from "@/components/echarts/EChartsPieChart";
 
 export default function EChartsSamplePage() {
 	return (
-		<>
-			<Typography.Title level={3}>ECharts Sample</Typography.Title>
+		<div
+			style={{
+				display: "flex",
+				flexDirection: "column",
+				width: "100%",
+				overflow: "auto",
+			}}
+		>
+			<Typography.Title level={3} style={{ flexShrink: 0, marginBottom: 8 }}>
+				ECharts Sample
+			</Typography.Title>
 			<Row gutter={[16, 16]}>
 				<Col span={12}>
 					<Card title="Bar Chart">
@@ -42,6 +51,6 @@ export default function EChartsSamplePage() {
 					</Card>
 				</Col>
 			</Row>
-		</>
+		</div>
 	);
 }

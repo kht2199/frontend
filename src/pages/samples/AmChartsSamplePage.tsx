@@ -8,8 +8,17 @@ import AmChartsPieChart from "@/components/amcharts/AmChartsPieChart";
 
 export default function AmChartsSamplePage() {
 	return (
-		<>
-			<Typography.Title level={3}>amCharts Sample</Typography.Title>
+		<div
+			style={{
+				display: "flex",
+				flexDirection: "column",
+				width: "100%",
+				overflow: "auto",
+			}}
+		>
+			<Typography.Title level={3} style={{ flexShrink: 0, marginBottom: 8 }}>
+				amCharts Sample
+			</Typography.Title>
 			<Row gutter={[16, 16]}>
 				<Col span={12}>
 					<Card title="Bar Chart">
@@ -42,6 +51,6 @@ export default function AmChartsSamplePage() {
 					</Card>
 				</Col>
 			</Row>
-		</>
+		</div>
 	);
 }

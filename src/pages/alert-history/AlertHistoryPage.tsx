@@ -5,11 +5,22 @@ import SearchFilters from "./SearchFilters";
 
 export default function AlertHistoryPage() {
 	return (
-		<>
-			<Typography.Title level={3}>알림 이력</Typography.Title>
+		<div
+			style={{
+				display: "flex",
+				flexDirection: "column",
+				width: "100%",
+				height: "100%",
+				overflow: "hidden",
+			}}
+		>
+			<Typography.Title level={3} style={{ flexShrink: 0, marginBottom: 8 }}>
+				알림 이력
+			</Typography.Title>
 			<SearchFilters />
 			<Tabs
 				defaultActiveKey="agGrid"
+				className="tabs-fill-height"
 				items={[
 					{
 						key: "agGrid",
@@ -23,6 +34,6 @@ export default function AlertHistoryPage() {
 					},
 				]}
 			/>
-		</>
+		</div>
 	);
 }

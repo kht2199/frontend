@@ -10,7 +10,7 @@ export default function AgGridAlertHistory() {
 	const rowData = useMemo<AlertHistoryRecord[]>(() => generateSampleData(), []);
 
 	return (
-		<div className="ag-theme-quartz" style={{ height: 600 }}>
+		<div className="ag-theme-quartz" style={{ height: "100%" }}>
 			<AgGridReact<AlertHistoryRecord>
 				rowData={rowData}
 				columnDefs={agGridColumns}

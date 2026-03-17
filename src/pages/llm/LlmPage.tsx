@@ -48,8 +48,18 @@ export default function LlmPage() {
 	};
 
 	return (
-		<>
-			<Typography.Title level={3}>LLM</Typography.Title>
+		<div
+			style={{
+				display: "flex",
+				flexDirection: "column",
+				width: "100%",
+				height: "100%",
+				overflow: "hidden",
+			}}
+		>
+			<Typography.Title level={3} style={{ flexShrink: 0, marginBottom: 8 }}>
+				LLM
+			</Typography.Title>
 			<Card
 				style={{
 					maxWidth: 800,
@@ -113,6 +123,6 @@ export default function LlmPage() {
 					</Button>
 				</Space.Compact>
 			</Card>
-		</>
+		</div>
 	);
 }
