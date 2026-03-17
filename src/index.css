@@ -1,3 +1,20 @@
 body {
 	margin: 0;
 }
+
+/* antd Tabs height fill for full-height tab content */
+.tabs-fill-height {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+.tabs-fill-height .ant-tabs-content-holder {
+	flex: 1;
+	min-height: 0;
+}
+.tabs-fill-height .ant-tabs-content {
+	height: 100%;
+}
+.tabs-fill-height .ant-tabs-tabpane {
+	height: 100%;
+}
