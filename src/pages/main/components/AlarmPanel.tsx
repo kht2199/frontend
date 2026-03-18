@@ -146,7 +146,7 @@ function AlarmCardItem({ alarm }: { alarm: Alarm }) {
 const ALL_LEVELS = [1, 2, 3, 4, 5];
 
 function TodaysAlarmContent() {
-	const alarms = useAlarms();
+	const { data: alarms = [] } = useAlarms();
 
 	const levelCounts = useMemo(
 		() =>

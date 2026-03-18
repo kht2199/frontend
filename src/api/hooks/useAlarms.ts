@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+
 export type Alarm = {
 	alarmId: string;
 	fabId: string;
@@ -66,6 +68,16 @@ const SAMPLE_ALARMS: Alarm[] = [
 	},
 ];
 
-export function useAlarms(): Alarm[] {
-	return SAMPLE_ALARMS;
+const USE_MOCK = import.meta.env.VITE_USE_MOCK_ALARMS === "true";
+
+export function useAlarms() {
+	return useQuery<Alarm[]>({
+		queryKey: ["alarms", { useMock: USE_MOCK }],
+		queryFn: async () => {
+			if (USE_MOCK) return SAMPLE_ALARMS;
+			const res = await fetch("http://localhost:8080/api/v1/alarms");
+			if (!res.ok) throw new Error("Failed to fetch alarms");
+			return res.json();
+		},
+	});
 }
