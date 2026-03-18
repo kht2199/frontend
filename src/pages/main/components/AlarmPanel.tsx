@@ -8,23 +8,17 @@ import {
 	Tag,
 	Typography,
 } from "antd";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { type Alarm, useAlarms } from "../../../api/hooks/useAlarms";
 import TrendPanel from "./TrendPanel";
 
 type AlarmState = "error" | "warning" | "normal";
 
-type AlarmCard = {
-	id: string;
-	title: string;
-	subtitle: string;
-	state: AlarmState;
-	datetime: string;
-};
-
-type LevelData = {
-	level: number;
-	cards: AlarmCard[];
-};
+function levelToState(level: number): AlarmState {
+	if (level <= 2) return "error";
+	if (level <= 4) return "warning";
+	return "normal";
+}
 
 const STATE_CARD_STYLE: Record<
 	AlarmState,
@@ -72,91 +66,6 @@ const STATE_BADGE_STATUS: Record<AlarmState, "error" | "warning" | "success"> =
 		normal: "success",
 	};
 
-const LEVEL_COUNTS: { label: string; count: number; state: AlarmState }[] = [
-	{ label: "LV1", count: 12, state: "error" },
-	{ label: "LV2", count: 5, state: "error" },
-	{ label: "LV3", count: 3, state: "warning" },
-	{ label: "LV4", count: 1, state: "warning" },
-	{ label: "LV5", count: 0, state: "normal" },
-];
-
-const LEVEL_DATA: LevelData[] = [
-	{
-		level: 1,
-		cards: [
-			{
-				id: "1",
-				title: "M14",
-				subtitle: "Current Queue too High",
-				state: "error",
-				datetime: "2026-02-24 10:32",
-			},
-			{
-				id: "2",
-				title: "M07",
-				subtitle: "Temperature Exceeded",
-				state: "error",
-				datetime: "2026-02-24 09:51",
-			},
-		],
-	},
-	{
-		level: 2,
-		cards: [
-			{
-				id: "3",
-				title: "M08",
-				subtitle: "Pressure Sensor Fault",
-				state: "error",
-				datetime: "2026-02-24 11:05",
-			},
-			{
-				id: "4",
-				title: "M21",
-				subtitle: "Flow Rate Warning",
-				state: "warning",
-				datetime: "2026-02-24 10:44",
-			},
-		],
-	},
-	{
-		level: 3,
-		cards: [
-			{
-				id: "5",
-				title: "M03",
-				subtitle: "Vibration Detected",
-				state: "warning",
-				datetime: "2026-02-24 08:20",
-			},
-		],
-	},
-	{
-		level: 4,
-		cards: [
-			{
-				id: "6",
-				title: "M11",
-				subtitle: "Maintenance Scheduled",
-				state: "warning",
-				datetime: "2026-02-24 07:00",
-			},
-		],
-	},
-	{
-		level: 5,
-		cards: [
-			{
-				id: "7",
-				title: "M05",
-				subtitle: "System Normal",
-				state: "normal",
-				datetime: "2026-02-24 06:30",
-			},
-		],
-	},
-];
-
 function LevelSummaryCard({
 	label,
 	count,
@@ -187,8 +96,9 @@ function LevelSummaryCard({
 	);
 }
 
-function AlarmCardItem({ card, level }: { card: AlarmCard; level: number }) {
-	const { border, background, color, subColor } = STATE_ALARM_STYLE[card.state];
+function AlarmCardItem({ alarm }: { alarm: Alarm }) {
+	const state = levelToState(alarm.level);
+	const { border, background, color, subColor } = STATE_ALARM_STYLE[state];
 	return (
 		<Card
 			style={{
@@ -201,7 +111,7 @@ function AlarmCardItem({ card, level }: { card: AlarmCard; level: number }) {
 		>
 			<Flex justify="space-between" align="center" style={{ marginBottom: 4 }}>
 				<Flex align="center" gap={6}>
-					<Badge status={STATE_BADGE_STATUS[card.state]} />
+					<Badge status={STATE_BADGE_STATUS[state]} />
 					<Typography.Text
 						strong
 						style={{
@@ -211,49 +121,72 @@ function AlarmCardItem({ card, level }: { card: AlarmCard; level: number }) {
 							whiteSpace: "nowrap",
 						}}
 					>
-						{card.title}
+						{alarm.fabId}
 					</Typography.Text>
 					<Typography.Text
 						style={{ fontSize: 11, color, whiteSpace: "nowrap" }}
 					>
-						{card.subtitle}
+						{alarm.message}
 					</Typography.Text>
 				</Flex>
 				<Tag
-					color={STATE_TAG_COLOR[card.state]}
+					color={STATE_TAG_COLOR[state]}
 					style={{ margin: "0 0 0 4px", fontSize: 10, flexShrink: 0 }}
 				>
-					L{level}
+					L{alarm.level}
 				</Tag>
 			</Flex>
 			<Typography.Text style={{ fontSize: 10, color: subColor }}>
-				{card.datetime}
+				{alarm.occurredAt}
 			</Typography.Text>
 		</Card>
 	);
 }
 
+const ALL_LEVELS = [1, 2, 3, 4, 5];
+
 function TodaysAlarmContent() {
+	const alarms = useAlarms();
+
+	const levelCounts = useMemo(
+		() =>
+			ALL_LEVELS.map((level) => ({
+				label: `LV${level}`,
+				count: alarms.filter((a) => a.level === level).length,
+				state: levelToState(level),
+			})),
+		[alarms],
+	);
+
+	const levelGroups = useMemo(
+		() =>
+			ALL_LEVELS.map((level) => ({
+				level,
+				alarms: alarms.filter((a) => a.level === level),
+			})),
+		[alarms],
+	);
+
 	return (
 		<>
 			<Flex gap={4} style={{ marginBottom: 16 }}>
-				{LEVEL_COUNTS.map((lv) => (
+				{levelCounts.map((lv) => (
 					<LevelSummaryCard key={lv.label} {...lv} />
 				))}
 			</Flex>
 
-			{LEVEL_DATA.map((lvData) => (
-				<div key={lvData.level}>
+			{levelGroups.map((g) => (
+				<div key={g.level}>
 					<Divider
 						orientation="left"
 						orientationMargin={0}
 						plain
 						style={{ margin: "10px 0 8px", fontSize: 14, fontWeight: 700 }}
 					>
-						Level {lvData.level}
+						Level {g.level}
 					</Divider>
-					{lvData.cards.map((card) => (
-						<AlarmCardItem key={card.id} card={card} level={lvData.level} />
+					{g.alarms.map((alarm) => (
+						<AlarmCardItem key={alarm.alarmId} alarm={alarm} />
 					))}
 				</div>
 			))}
