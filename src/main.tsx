@@ -5,10 +5,19 @@ import "./index.css";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
 
-const rootElement = document.getElementById("root");
-if (!rootElement) throw new Error("Root element not found");
-createRoot(rootElement).render(
-	<StrictMode>
-		<App />
-	</StrictMode>,
-);
+async function bootstrap() {
+	if (import.meta.env.VITE_USE_MOCK_ALARMS === "true") {
+		const { worker } = await import("./mocks/browser");
+		await worker.start({ onUnhandledRequest: "bypass" });
+	}
+
+	const rootElement = document.getElementById("root");
+	if (!rootElement) throw new Error("Root element not found");
+	createRoot(rootElement).render(
+		<StrictMode>
+			<App />
+		</StrictMode>,
+	);
+}
+
+bootstrap();
